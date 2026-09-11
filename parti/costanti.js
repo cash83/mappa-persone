@@ -3,7 +3,7 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.1.1';
+export const MAPPA_VERSIONE = '3.1.2';
 
 /** dove sono i file sul box: serve per caricare Leaflet da noi, non da internet */
 export const MAPPA_BASE = '/local/community/mappa-persone/';
@@ -130,34 +130,19 @@ export const MAPPA_SFONDI = [
   },
   {
     /*
-     * La versione umanitaria della carta: piu' contrasto, nomi e sentieri piu'
-     * marcati, verde piu' acceso. Sta pero' su server di volontari come quelli
-     * di OpenStreetMap, con la stessa regola d'uso: se un giorno tornano dei
-     * 403 al posto dei tasselli, la causa e' quella e non un guasto. Resta
-     * perche' e' una scelta, non il fondo di serie.
+     * Topografico: curve di livello e ombra dei rilievi. Anche questo di Esri.
+     * Prima era OpenTopoMap, tolto insieme alla voce "Vie e nomi" che stava su
+     * openstreetmap.fr: erano gli ultimi due fondi su server di volontari, cioe'
+     * gli ultimi due che un giorno potevano tornare 403 e riempire la mappa di
+     * quadrati gialli e neri. Adesso tutti i fondi vengono dallo stesso posto.
+     * Una chiave dimenticata in giro: chi aveva scelto un fondo che non c'e'
+     * piu' si ritrova lo stradale, perche' `carta.js` a chiave sconosciuta
+     * ripiega sul fondo di serie. Non si rompe niente.
      */
-    chiave: 'vie',
-    nome: 'Vie e nomi',
-    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-    opzioni: {
-      subdomains: 'ab',
-      maxNativeZoom: 19,
-      maxZoom: 20,
-      attribution: '&copy; OpenStreetMap, tasselli Humanitarian OSM Team',
-    },
-  },
-  {
-    // OpenTopoMap: quella con le curve di livello marroni, l'ombra dei rilievi e
-    // i sentieri numerati. Niente chiave, ma arriva solo fino allo zoom 17.
     chiave: 'topografico',
     nome: 'Topografico',
-    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    opzioni: {
-      subdomains: 'abc',
-      maxNativeZoom: 17,
-      maxZoom: 20,
-      attribution: '&copy; OpenStreetMap, SRTM | &copy; OpenTopoMap (CC-BY-SA)',
-    },
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    opzioni: { maxNativeZoom: 19, maxZoom: 20, attribution: '&copy; Esri' },
   },
 ];
 

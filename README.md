@@ -129,7 +129,7 @@ with their own row of arrows, so the two never overlap even on the same road.
 |---|---|---|
 | `entities` | — | The list of people, trackers and zones to draw |
 | `ore` | `12` | How many hours of trail to show. `0` = only where they are now |
-| `sfondo` | `stradale` | `stradale`, `scuro`, `satellite`, `vie`, `topografico` |
+| `sfondo` | `stradale` | `stradale`, `scuro`, `satellite`, `topografico` |
 | `sfondo_cartellino` | `satellite` | Background of the mini map inside the popup |
 | `ingrandimento` | `16` | How far it may zoom in when framing itself |
 | `gruppo_opacita` | `100` | How visible the group badge is |

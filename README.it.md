@@ -131,7 +131,7 @@ la propria fila di frecce, così non si accavallano nemmeno sulla stessa strada.
 |---|---|---|
 | `entities` | — | L'elenco di persone, tracciatori e zone da disegnare |
 | `ore` | `12` | Quante ore di scia mostrare. `0` = solo dove sono adesso |
-| `sfondo` | `stradale` | `stradale`, `scuro`, `satellite`, `vie`, `topografico` |
+| `sfondo` | `stradale` | `stradale`, `scuro`, `satellite`, `topografico` |
 | `sfondo_cartellino` | `satellite` | Sfondo della mappina dentro il cartellino |
 | `ingrandimento` | `16` | Quanto può stringere quando si inquadra da sola |
 | `gruppo_opacita` | `100` | Quanto si vede il pallino di gruppo |

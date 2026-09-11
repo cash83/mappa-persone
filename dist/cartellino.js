@@ -1,4 +1,4 @@
-import { mappaDistanza } from './utili.js?v=3.0.5';
+import { mappaDistanza } from './utili.js?v=3.0.6';
 
 /**
  * IL CARTELLINO che si apre toccando una persona: foto, nome, dove sta e da

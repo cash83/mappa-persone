@@ -34,6 +34,8 @@ const TAPPE = 10;                /* quante tappe accetta il server pubblico in u
                                     "Exceeded max locations: 10". */
 const SFOLTISCI = 25;            // metri: sotto questa distanza la lettura non aggiunge niente
 const FERMO = 1;                 // km/h: sotto questa andatura e' il GPS che balla da fermo
+const RICALCO = 10;              // metri: sotto questo due punti sono lo stesso posto
+const RICALCO_MAX = 250;         // metri di sperone ricalcato che si accetta di cancellare
 const TELETRASPORTO = 200;       /* km/h: sopra questa andatura non c'e' piu' un
                                     viaggio, c'e' una lettura sbagliata */
 const COSTI = {
@@ -561,8 +563,34 @@ function copre(g, punti, giro) {
 
 /* --------------------------------------------------------------- il lavoro */
 
+/**
+ * IL RICALCO. Due tratte calcolate una dopo l'altra si toccano in una lettura.
+ * Quando quella lettura e' caduta cento metri piu' in la' SULLA STESSA STRADA -
+ * una presa male, con quaranta metri di precisione, succede spesso - la prima
+ * tratta ci va e la seconda torna indietro dalla stessa via: sulla mappa esce
+ * uno sperone che nessuno ha percorso, e sembra che uno abbia fatto un giro.
+ * Se la coda di quello che c'e' gia' e la testa del pezzo nuovo sono lo stesso
+ * cammino al contrario, quel tratto si cancella da tutte e due e resta il punto
+ * dove si separano davvero. Si cancella al massimo RICALCO_MAX, se no si
+ * butterebbe via anche la strada di chi in fondo a un vicolo ci e' andato sul
+ * serio e poi e' tornato indietro.
+ */
+function ricalco(linea, pezzo) {
+  let n = 0;
+  let quanto = 0;
+  while (n + 1 < pezzo.length && n + 1 < linea.length) {
+    if (mappaDistanza(linea[linea.length - 1 - n], pezzo[n]) > RICALCO) break;
+    if (n > 0) quanto += mappaDistanza(pezzo[n - 1], pezzo[n]);
+    if (quanto > RICALCO_MAX) break;
+    n += 1;
+  }
+  return n > 1 ? n - 1 : 0;
+}
+
 function attacca(linea, pezzo) {
-  pezzo.forEach((c) => {
+  const doppio = ricalco(linea, pezzo);
+  if (doppio) linea.length -= doppio;
+  (doppio ? pezzo.slice(doppio) : pezzo).forEach((c) => {
     const u = linea[linea.length - 1];
     if (!u || u[0] !== c[0] || u[1] !== c[1]) linea.push(c);
   });

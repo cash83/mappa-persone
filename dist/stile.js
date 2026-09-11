@@ -1,4 +1,4 @@
-import { MAPPA_ICONA_CENTRA, MAPPA_ICONA_STRATI } from './costanti.js?v=3.0.5';
+import { MAPPA_ICONA_CENTRA, MAPPA_ICONA_STRATI } from './costanti.js?v=3.0.6';
 
 /**
  * Il vestito della scheda. Va messo NELLO shadow DOM insieme a quello di

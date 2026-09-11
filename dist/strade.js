@@ -1,5 +1,5 @@
-import { mappaDistanza } from './utili.js?v=3.0.3';
-import { MAPPA_VERSIONE } from './costanti.js?v=3.0.3';
+import { mappaDistanza } from './utili.js?v=3.0.4';
+import { MAPPA_VERSIONE } from './costanti.js?v=3.0.4';
 
 /**
  * LA VIA SOTTO LA SCIA. E' lo schema che funzionava, rimesso com'era:
@@ -339,9 +339,21 @@ function mezzo(punti) {
   }
 
   let v = null;
-  if (vel.length) {
+  if (vel.length >= 3) {
     vel.sort((a, b) => a - b);
     v = vel[Math.min(vel.length - 1, Math.floor(vel.length * 0.8))];
+  } else if (vel.length) {
+    /*
+     * Uno o due tratti lunghi e basta: vuol dire che il telefono ha taciuto per
+     * minuti, e fra due letture lontane la linea d'aria e' sempre piu' corta
+     * della strada vera. Quella velocita' non dice che mezzo era, dice solo
+     * quanto ha taciuto il telefono: un'auto in paese viene fuori a sedici
+     * all'ora, cioe' una bicicletta. E alla bicicletta il calcolatore lascia
+     * fare i sensi unici al contrario, dove il cartello lo permette: la scia
+     * scende per una via dove in macchina non si puo' scendere.
+     * Con cosi' poche prove si sceglie l'auto, che e' la piu' prudente.
+     */
+    return 'auto';
   } else {
     /*
      * Nessun tratto lungo abbastanza: succede nei giri corti dentro il paese.

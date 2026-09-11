@@ -1,5 +1,6 @@
 {
   "name": "mappa-persone",
   "render_readme": true,
-  "filename": "mappa-persone.js"
+  "filename": "mappa-persone.js",
+  "homeassistant": "2024.1.0"
 }

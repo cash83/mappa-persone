@@ -40,8 +40,9 @@ sezione [Privacy](#privacy).
 
 ### A mano
 
-1. Copia tutta la cartella in `config/www/community/mappa-persone/`
-   (`mappa-persone.js` e la cartella `parti/` devono restare insieme).
+1. Scarica l'ultima release e copia il contenuto di **`dist/`** dentro
+   `config/www/community/mappa-persone/` (tutti i file `.js` piu' `leaflet.js`
+   e `leaflet.css`, uno accanto all'altro, senza sottocartelle).
 2. Impostazioni → Dashboard → tre puntini → **Risorse** → aggiungi
    `/local/community/mappa-persone/mappa-persone.js` come **modulo JavaScript**.
 3. Ricarica il browser con ctrl+shift+R.
@@ -214,6 +215,6 @@ Il cerchio della zona usa sempre il **raggio vero** impostato in Home Assistant.
 Dati della mappa © [OpenStreetMap](https://www.openstreetmap.org/copyright).
 Satellite e mappa scura © Esri. Calcolo delle strade con
 [Valhalla](https://valhalla.readthedocs.io) e [OSRM](https://project-osrm.org).
-Mappa disegnata con [Leaflet](https://leafletjs.com).
+Mappa disegnata con [Leaflet](https://leafletjs.com) 1.9.4, incluso in `leaflet/` con la sua licenza BSD-2.
 
 Distribuita con [licenza MIT](LICENSE).

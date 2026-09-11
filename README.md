@@ -38,8 +38,9 @@ the map tiles and, if you turn it on, the road routing — see [Privacy](#privac
 
 ### By hand
 
-1. Copy the whole folder into `config/www/community/mappa-persone/`
-   (keep `mappa-persone.js` and the `parti/` folder together).
+1. Download the latest release and copy the contents of **`dist/`** into
+   `config/www/community/mappa-persone/` (all the `.js` files plus `leaflet.js`
+   and `leaflet.css`, side by side, no subfolders).
 2. Settings → Dashboards → three dots → **Resources** → add
    `/local/community/mappa-persone/mappa-persone.js` as a **JavaScript module**.
 3. Reload your browser with ctrl+shift+R.
@@ -208,6 +209,6 @@ The zone circle always uses the **real radius** set in Home Assistant.
 
 Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
 Satellite and dark tiles © Esri. Routing by [Valhalla](https://valhalla.readthedocs.io) and
-[OSRM](https://project-osrm.org). Map rendering by [Leaflet](https://leafletjs.com).
+[OSRM](https://project-osrm.org). Map rendering by [Leaflet](https://leafletjs.com) 1.9.4, bundled in `leaflet/` under its own BSD-2 licence.
 
 Released under the [MIT licence](LICENSE).

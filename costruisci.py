@@ -13,6 +13,13 @@ cache, e sembra che la nuova versione non sia cambiata in niente.
 
 Si lancia con `python costruisci.py`. La cartella `dist/` va messa sotto
 controllo di versione: e' quella che la gente installa.
+
+Il file d'ingresso in cima al deposito si chiama `sorgente.js` e NON
+`mappa-persone.js`, e non e' un capriccio: HACS cerca il nome dichiarato in
+`hacs.json` prima in cima al deposito e solo dopo dentro `dist/`, e si ferma
+al primo che trova. Con un `mappa-persone.js` in cima scaricherebbe quello da
+solo -- che pero' importa i pezzi da `parti/` -- e la scheda arriverebbe
+spezzata a chi la installa.
 """
 import io
 import os
@@ -46,7 +53,7 @@ def main():
     os.makedirs(DIST)
 
     fatti = []
-    principale = io.open(os.path.join(QUI, 'mappa-persone.js'), encoding='utf-8').read()
+    principale = io.open(os.path.join(QUI, 'sorgente.js'), encoding='utf-8').read()
     io.open(os.path.join(DIST, 'mappa-persone.js'), 'w', encoding='utf-8').write(
         appiattisci(principale, v))
     fatti.append('mappa-persone.js')

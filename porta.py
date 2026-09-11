@@ -4,32 +4,28 @@ Porta la scheda sul box.
 
 Un solo comando: `python porta.py`.
 
-Cosa fa, e perche':
- - legge la versione da parti/costanti.js;
- - copia tutti i .js in /config/www/community/mappa-persone/ APPENDENDO ?v=<versione>
-   a ogni import. Senza questo il browser rinfresca solo il file principale (quello
-   ha il ?v= nella risorsa Lovelace) e continua a usare i pezzi vecchi tenuti in
-   cache: si cambia una cosa in parti/ e non succede niente;
- - dice l'indirizzo da mettere nella risorsa Lovelace.
-Leaflet si copia una volta sola: se e' gia' la' non si tocca.
+Da quando la scheda si installa da HACS, questo copione mette sul box ESATTAMENTE
+quello che ci metterebbe HACS: i file appiattiti di `dist/`, tutti uno accanto
+all'altro dentro `www/community/mappa-persone/`, senza sottocartelle. Cosi' la
+prova in casa e l'installazione della gente sono lo stesso identico impianto, e
+la risorsa Lovelace di HACS (`/hacsfiles/mappa-persone/mappa-persone.js`) continua
+a funzionare senza toccare niente.
+
+Cosa fa, in ordine:
+ - ricontrolla gli accenti inversi in tutti i pezzi (due trappole gia' pagate);
+ - rifa' `dist/` con `costruisci.py`, che appiattisce gli import e ci appiccica
+   `?v=<versione>` (senza, il browser continua a servire i pezzi vecchi);
+ - svuota la cartella sul box e ci copia dentro `dist/`;
+ - toglie le sottocartelle rimaste dalle installazioni vecchie (`parti/`, `dist/`).
 """
 import io
 import os
-import re
 import shutil
+
+import costruisci
 
 QUI = os.path.dirname(os.path.abspath(__file__))
 BOX = r'\\192.168.50.165\config\www\community\mappa-persone'
-
-
-def versione():
-    s = io.open(os.path.join(QUI, 'parti', 'costanti.js'), encoding='utf-8').read()
-    return re.search(r"MAPPA_VERSIONE = '([^']+)'", s).group(1)
-
-
-def timbra(testo, v):
-    """a ogni import nostro si attacca la versione, cosi' il browser lo rilegge"""
-    return re.sub(r"(from '\./[^']+\.js)'", r"\1?v=" + v + "'", testo)
 
 
 def controlla(testo, nome):
@@ -56,40 +52,38 @@ def controlla(testo, nome):
 
 
 def porta():
-    v = versione()
+    for cartella in (QUI, os.path.join(QUI, 'parti')):
+        for f in sorted(os.listdir(cartella)):
+            if f.endswith('.js'):
+                dentro = os.path.join(cartella, f)
+                controlla(io.open(dentro, encoding='utf-8').read(),
+                          os.path.relpath(dentro, QUI))
+
+    costruisci.main()
+    dist = os.path.join(QUI, 'dist')
+
     if not os.path.isdir(BOX):
         os.makedirs(BOX)
+
+    # le sottocartelle delle installazioni vecchie: da HACS in poi non esistono piu'
+    for vecchia in ('parti', 'dist'):
+        la = os.path.join(BOX, vecchia)
+        if os.path.isdir(la):
+            shutil.rmtree(la)
+            print('tolta la vecchia cartella %s/' % vecchia)
+
     fatti = []
-    for cartella, dentro, files in os.walk(QUI):
-        # si POTANO le cartelle da saltare, se no os.walk ci scende comunque
-        dentro[:] = [d for d in dentro if d not in ('backup', '__pycache__')]
-        if os.path.basename(cartella) in ('backup', '__pycache__'):
-            continue
-        for f in files:
-            if not f.endswith('.js') or f.startswith('leaflet'):
-                continue
-            dentro = os.path.join(cartella, f)
-            relativo = os.path.relpath(dentro, QUI)
-            fuori = os.path.join(BOX, relativo)
-            if not os.path.isdir(os.path.dirname(fuori)):
-                os.makedirs(os.path.dirname(fuori))
-            testo = io.open(dentro, encoding='utf-8').read()
-            controlla(testo, relativo)
-            io.open(fuori, 'w', encoding='utf-8').write(timbra(testo, v))
-            fatti.append(relativo.replace('\\', '/'))
+    for f in sorted(os.listdir(dist)):
+        shutil.copy(os.path.join(dist, f), os.path.join(BOX, f))
+        fatti.append(f)
 
-    # Leaflet: le copie locali, una volta sola
-    for f in ('leaflet.js', 'leaflet.css'):
-        la = os.path.join(BOX, f)
-        if not os.path.isfile(la):
-            shutil.copy(r'\\192.168.50.165\config\www\community\amazon-corriere-card\%s' % f, la)
-            fatti.append(f + ' (copiato da amazon-corriere-card)')
-
-    print('versione %s, portati %d file:' % (v, len(fatti)))
-    for f in sorted(fatti):
+    print()
+    print('portati %d file sul box:' % len(fatti))
+    for f in fatti:
         print('   ', f)
     print()
-    print('risorsa Lovelace: /local/community/mappa-persone/mappa-persone.js?v=%s' % v)
+    print('risorsa Lovelace (quella che scrive HACS):')
+    print('   /hacsfiles/mappa-persone/mappa-persone.js')
 
 
 if __name__ == '__main__':

@@ -72,6 +72,17 @@ def porta():
             shutil.rmtree(la)
             print('tolta la vecchia cartella %s/' % vecchia)
 
+    # le copie compresse che si porta dietro HACS: Home Assistant serve QUELLE
+    # a ogni browser (chiedono tutti gzip), quindi finche' restano li' la
+    # modifica appena portata non si vede nemmeno ricaricando
+    tolte = 0
+    for f in sorted(os.listdir(BOX)):
+        if f.endswith('.gz'):
+            os.remove(os.path.join(BOX, f))
+            tolte += 1
+    if tolte:
+        print('tolte %d copie .gz vecchie di HACS' % tolte)
+
     fatti = []
     for f in sorted(os.listdir(dist)):
         shutil.copy(os.path.join(dist, f), os.path.join(BOX, f))

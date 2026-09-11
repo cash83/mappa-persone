@@ -34,6 +34,8 @@ const TAPPE = 10;                /* quante tappe accetta il server pubblico in u
                                     "Exceeded max locations: 10". */
 const SFOLTISCI = 25;            // metri: sotto questa distanza la lettura non aggiunge niente
 const FERMO = 1;                 // km/h: sotto questa andatura e' il GPS che balla da fermo
+const TELETRASPORTO = 200;       /* km/h: sopra questa andatura non c'e' piu' un
+                                    viaggio, c'e' una lettura sbagliata */
 const COSTI = {
   piedi: 'pedestrian',
   bici: 'bicycle',
@@ -392,9 +394,37 @@ function gemelle(punti) {
   return fuori;
 }
 
+/**
+ * GLI SBALZI. Ogni tanto il telefono spara UNA lettura a centinaia di metri e
+ * quella dopo torna dov'era: fra le due ci sarebbero trecento all'ora. La scia
+ * ci va dietro, il calcolatore cerca una strada per arrivarci e ne sceglie una
+ * sbagliata - la circonvallazione invece della via del paese.
+ * Si butta solo la lettura che, tolta di mezzo, rimette il pezzo dentro il
+ * possibile: se il salto resta impossibile anche senza di lei, allora non e'
+ * uno sbalzo ma un buco vero, e quella lettura e' l'unica cosa che abbiamo.
+ */
+function sbalzi(punti) {
+  if (punti.length < 3) return punti;
+  const andatura = (a, b) => {
+    const sec = Math.max(0.5, ((b[2] || 0) - (a[2] || 0)) / 1000);
+    return (mappaDistanza(a, b) / sec) * 3.6;
+  };
+  const fuori = [punti[0]];
+  for (let i = 1; i < punti.length - 1; i++) {
+    const a = fuori[fuori.length - 1];
+    const b = punti[i];
+    const c = punti[i + 1];
+    if (Math.max(andatura(a, b), andatura(b, c)) > TELETRASPORTO
+      && andatura(a, c) <= TELETRASPORTO) continue;
+    fuori.push(b);
+  }
+  fuori.push(punti[punti.length - 1]);
+  return fuori;
+}
+
 /** una lettura ogni venticinque metri, e niente di quello che manda da fermo */
 function sfoltisci(grezzi) {
-  const punti = grezzi.length > 2 ? gemelle(grezzi) : grezzi;
+  const punti = grezzi.length > 2 ? sbalzi(gemelle(grezzi)) : grezzi;
   const fuori = [punti[0]];
   for (let i = 1; i < punti.length; i++) {
     const u = fuori[fuori.length - 1];

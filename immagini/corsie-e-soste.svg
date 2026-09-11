@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 380" width="880" height="380" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <rect width="880" height="380" fill="#f3f6f4"/>
+  <text x="30" y="34" font-size="19" font-weight="600" fill="#1f2a36">Andata e ritorno, e cosa succede quando uno si ferma</text>
+
+  <!-- ============ corsie ============ -->
+  <g>
+    <rect x="30" y="60" width="390" height="286" rx="12" fill="#fff" stroke="#dde4df"/>
+    <text x="50" y="88" font-size="15" font-weight="600" fill="#1f2a36">Stessa strada, due corsie</text>
+
+    <g fill="none" stroke="#e8ded0" stroke-width="22" stroke-linecap="round">
+      <path d="M70 250 L200 250 L300 160 L390 152"/>
+    </g>
+    <path d="M74 259 L202 259 L303 168 L392 160" fill="none" stroke="#e0457b" stroke-width="6" stroke-linecap="round"/>
+    <path d="M66 241 L198 241 L297 152 L388 144" fill="none" stroke="#f0a3c1" stroke-width="4" stroke-linecap="round"/>
+
+    <g fill="#fff" stroke="#222" stroke-width="1.1" stroke-linejoin="round">
+      <path d="M150 259 l8 10 l-4.5 0 l0 8 l-7 0 l0 -8 l-4.5 0 z" transform="rotate(90 150 266)"/>
+      <path d="M340 164 l8 10 l-4.5 0 l0 8 l-7 0 l0 -8 l-4.5 0 z" transform="rotate(95 340 171)"/>
+      <path d="M250 196 l8 10 l-4.5 0 l0 8 l-7 0 l0 -8 l-4.5 0 z" transform="rotate(-85 250 203)"/>
+    </g>
+
+    <g font-size="12.5" fill="#4c5a67">
+      <rect x="50" y="296" width="16" height="6" rx="3" fill="#e0457b"/>
+      <text x="74" y="303">ritorno: piena e marcata</text>
+      <rect x="50" y="316" width="16" height="4" rx="2" fill="#f0a3c1"/>
+      <text x="74" y="322">andata: chiara e sottile</text>
+      <text x="50" y="340">ognuna sulla destra del proprio senso di marcia</text>
+    </g>
+  </g>
+
+  <!-- ============ soste ============ -->
+  <g>
+    <rect x="450" y="60" width="400" height="286" rx="12" fill="#fff" stroke="#dde4df"/>
+    <text x="470" y="88" font-size="15" font-weight="600" fill="#1f2a36">Una sosta non è un percorso</text>
+
+    <g fill="none" stroke="#e8ded0" stroke-width="16" stroke-linecap="round">
+      <path d="M480 150 L820 150"/>
+      <path d="M650 150 L650 300"/>
+    </g>
+    <path d="M480 150 L650 150" fill="none" stroke="#e0457b" stroke-width="6" stroke-linecap="round"/>
+    <path d="M650 150 L820 150" fill="none" stroke="#e0457b" stroke-width="6" stroke-linecap="round"/>
+
+    <circle cx="650" cy="236" r="46" fill="#2f6fed" fill-opacity=".09" stroke="#2f6fed" stroke-opacity=".4" stroke-width="1.5"/>
+    <g fill="#e0457b" stroke="#fff" stroke-width="1.4">
+      <circle cx="638" cy="222" r="4.5"/><circle cx="660" cy="216" r="4.5"/>
+      <circle cx="672" cy="238" r="4.5"/><circle cx="644" cy="250" r="4.5"/>
+      <circle cx="628" cy="236" r="4.5"/><circle cx="656" cy="252" r="4.5"/>
+      <circle cx="666" cy="228" r="4.5"/><circle cx="634" cy="244" r="4.5"/>
+    </g>
+    <text x="470" y="310" font-size="12.5" fill="#4c5a67">Da fermo il GPS balla di decine di metri. Quelle posizioni</text>
+    <text x="470" y="328" font-size="12.5" fill="#4c5a67">restano pallini: non diventano un percorso e non si chiedono</text>
+    <text x="470" y="346" font-size="12.5" fill="#4c5a67">strade, se no verrebbe una ragnatela dentro il cortile.</text>
+  </g>
+</svg>

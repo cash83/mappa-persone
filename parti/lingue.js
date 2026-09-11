@@ -1,0 +1,244 @@
+/**
+ * LE PAROLE DELLA SCHEDA, in italiano e in inglese.
+ *
+ * Home Assistant dice in che lingua sta parlando (`hass.locale.language`, e se
+ * manca `hass.language`). Se e' italiano si usa l'italiano, per tutto il resto
+ * del mondo l'inglese: meglio una lingua che uno capisce che una che non legge.
+ *
+ * Qui dentro c'e' SOLO quello che l'utente vede. I nomi delle impostazioni
+ * salvate in configurazione restano quelli di sempre, in italiano: cambiarli
+ * romperebbe le schede gia' fatte.
+ */
+
+const IT = {
+  nomeCarta: 'Mappa persone',
+  descrizioneCarta: 'Una mappa con le persone, i tracciatori e le zone che scegli, '
+    + 'e la scia delle ore passate appoggiata sulle strade vere.',
+
+  gruppoPersone: 'Persone e tracciatori',
+  gruppoZone: 'Zone',
+  boxMappa: 'Impostazioni della mappa',
+  boxMappaSotto: 'Sfondi, ingrandimento, tracciamento, strade',
+  boxPersona: 'Foto, colore, grandezza, trasparenza',
+  boxZona: 'Foto, icona, colore, grandezza, trasparenza',
+  boxVia: 'La via e i viaggi',
+  boxViaSotto: 'Aggancio alla via, soste, andata e ritorno, pallini',
+  togli: 'Togli',
+  togliDallaMappa: 'Togli dalla mappa',
+  caricaFoto: 'Carica una foto',
+  cambiaFoto: 'Cambia foto',
+
+  andata: 'Andata',
+  ritorno: 'Ritorno',
+  sosta: 'Sosta',
+  scia: 'Scia',
+  cartellinoScia: (verso, chi, da, a) => verso + ' di ' + chi + ', dalle ' + da + ' alle ' + a,
+
+  sfondi: {
+    stradale: 'Stradale',
+    scuro: 'Scuro',
+    satellite: 'Satellite',
+    vie: 'Vie e nomi',
+    topografico: 'Topografico',
+  },
+  aggancio: { no: 'No, unisci i punti', valhalla: 'Valhalla', osrm: 'OSRM' },
+  profilo: {
+    automatico: 'Lo riconosce da solo',
+    piedi: 'A piedi',
+    bici: 'In bici',
+    auto: 'In auto',
+    bus: 'In autobus',
+  },
+
+  etichette: {
+    entity: 'Chi o cosa',
+    mostra: 'Mostra questa zona sulla mappa',
+    nome: 'Nome da scrivere sulla zona',
+    icona: 'Icona',
+    colore: 'Colore',
+    dim: "Grandezza dell'icona",
+    opacita: 'Quanto si vede',
+    nuova: 'Aggiungi una persona, un tracciatore o una zona',
+    sfondo: 'Sfondo della mappa',
+    sfondo_cartellino: 'Sfondo della mappina nel cartellino',
+    ingrandimento: 'Quanto stringe quando si inquadra da sola',
+    ore: 'Quante ore di scia mostrare',
+    gruppo_opacita: 'Quanto si vede il pallino di gruppo',
+    aggancio: 'Chi calcola le strade',
+    via: 'Fai seguire la scia alla via',
+    profilo: "Con che mezzo si e' spostato",
+    via_salto: 'Oltre questa distanza calcola la strada (m)',
+    via_giro: "Quanto puo' allungare un percorso calcolato (%)",
+    usa_indirizzo: "Usa anche il sensore dell'indirizzo",
+    fermo_m: "Sotto questo spostamento e' fermo, non in viaggio (m)",
+    pausa_min: "Dopo questi minuti fermo, il viaggio e' finito",
+    andata_ritorno: 'Distingui andata e ritorno',
+    scosto: 'Quanto separare andata e ritorno',
+    spessore: 'Spessore della scia che segue la via',
+    alone: 'Alone della precisione',
+    frecce: 'Frecce del senso di marcia',
+    frecce_colore: 'Colore delle frecce',
+    pallini: 'Segna le posizioni ricevute',
+    pallini_dim: 'Grandezza dei pallini',
+    passo_pallini: 'Tieni i pallini distanti almeno (m)',
+    sosta_linea: 'Linea dentro le soste (m)',
+    sfuma: "Sbiadisci le parti piu' vecchie",
+  },
+
+  aiuti: {
+    entity: "Una persona, un tracciatore o una zona. Deve avere latitudine e longitudine, se no sulla mappa non c'e' niente da disegnare.",
+    mostra: "Spento, la zona sparisce dal disegno: niente cerchio, niente foto, niente nome. Resta pero' qui in elenco con tutte le sue impostazioni, pronta da riaccendere quando vuoi.",
+    nome: 'Il nome scritto dentro il cerchio. Lascialo vuoto per usare quello di Home Assistant. Serve soprattutto ad accorciarlo: un nome lungo su un cerchio piccolo non ci sta e sparisce.',
+    icona: "L'icona dentro il cerchio della zona. Vuoto = quella che la zona ha gia' in Home Assistant. Se carichi una foto comanda la foto, e l'icona non si vede piu'.",
+    colore: "Il colore della scia, del bordo dell'icona e del cerchio della zona. Vuoto = il colore principale del tuo tema.",
+    dim: "Quanto grande l'icona sulla mappa. Piccola per chi si muove poco, grande per chi vuoi trovare a colpo d'occhio. Sulle zone vale solo per l'icona: la foto riempie sempre tutto il cerchio.",
+    opacita: "A 100 e' piena, abbassandola si vede la mappa attraverso. Utile quando due persone stanno quasi nello stesso punto e una copre l'altra.",
+    sfondo: 'Come si vede la mappa grande: stradale, la stessa scura per la sera, la foto dal satellite, quella pulita con le vie scritte grandi, o la topografica con le curve di livello. Puoi cambiarla al volo anche col tasto in alto a destra, senza passare di qui.',
+    sfondo_cartellino: "Come si vede la mappina dentro il cartellino che si apre toccando una persona. Li' dentro si cambia anche col quadratino di Google in basso a sinistra.",
+    ingrandimento: "Quando la mappa si inquadra da sola, questo e' il massimo a cui puo' stringere. 14 inquadra il paese, 16 il quartiere, 18 il cortile. Senza un limite, due persone ferme vicine farebbero saltare la mappa addosso alle case.",
+    ore: "Quanto indietro nel tempo mostrare la scia. A 0 si vede solo dove sono adesso, senza nessun percorso. Piu' ore metti, piu' la scheda impiega a disegnare la prima volta.",
+    gruppo_opacita: 'Quando due persone finiscono quasi nello stesso punto, le loro icone diventano un pallino solo col numero di quante sono. Qui decidi quanto si vede quel pallino: 100 pieno, 10 quasi trasparente. Toccandolo, le facce si aprono a ventaglio.',
+    aggancio: "Chi calcola le strade quando la scheda deve ricostruire un pezzo di percorso. Valhalla e OSRM sono due servizi pubblici gratuiti e senza registrazione. Con No non esce da casa tua nessuna richiesta, e le scie restano righe dritte fra una posizione e l'altra. Poi, per ogni persona, puoi decidere se usarlo o no.",
+    via: "Il telefono manda posizioni che cadono a qualche metro dalla strada, e ogni tanto ne salta una. Acceso, la scia viene appoggiata sulla strada vera e i pezzi mancanti riempiti seguendo il percorso giusto per il mezzo. Spento, la linea unisce le posizioni cosi' come sono: piu' grezza, ma non c'e' niente di calcolato.",
+    profilo: "Cambia le regole che il calcolatore rispetta. A piedi i sensi unici non contano, in bici quasi mai, in auto sempre; in autobus si puo' passare nelle corsie e nei piazzali riservati ai mezzi. Lasciandolo su 'Lo riconosce da solo' guarda la velocita' di ogni viaggio: fino a 7 all'ora a piedi, fino a 25 in bici, sopra in auto. Considera solo i tratti lunghi almeno 150 metri, perche' le manovre sotto casa sono lente anche in macchina.",
+    via_salto: "E' la voce piu' importante di tutte, perche' decide COME viene ricostruito ogni pezzo di scia. Sotto questa distanza la scheda appoggia la traccia sulla strada; sopra, calcola il percorso da un punto all'altro. La differenza e' grossa: chi calcola un percorso rispetta sensi unici e divieti, chi appoggia la traccia no, e ogni tanto infila la scia in una stradina vietata o le fa fare il giro di una rotonda. Se vedi curve sbagliate ABBASSALA: a 120 piu' tratti vengono calcolati e la scia rispetta le regole della strada. Alzandola si risparmiano richieste ma tornano gli errori.",
+    via_giro: "Il freno contro i giri inventati. Una strada vera e' sempre piu' lunga della linea d'aria, ma non il triplo: qui dici di quanto puo' allungare prima che il percorso venga buttato. A 200 accetta fino al doppio piu' duecento metri; oltre, la scheda rinuncia e tira una riga dritta. Se vedi giri assurdi abbassalo, se vedi troppe righe dritte alzalo.",
+    usa_indirizzo: "Il telefono manda anche l'indirizzo su un canale suo, e dentro ci mette una coordinata. Attenzione: quella coordinata non e' dove sei, e' dove sta l'indirizzo che ha trovato, spesso il centro dell'edificio. Su certi telefoni risponde sempre con gli stessi due o tre punti fissi, che sulla mappa diventano pallini dove non sei mai stato. Accendilo solo se il tracciatore tace spesso, e controlla il risultato.",
+    fermo_m: "Distingue chi si sposta da chi sta fermo. Un telefono fermo manda comunque centinaia di posizioni che ballano di qualche decina di metri: se in tutto un tratto non si allontana piu' di cosi', non e' un viaggio ma una sosta, e non viene ne' disegnata come percorso ne' mandata al calcolatore. Troppo basso e ogni respiro del GPS diventa un viaggio finto; troppo alto e due posti vicini fra loro diventano un posto solo.",
+    pausa_min: "Quanto deve stare fermo perche' un viaggio si consideri chiuso e il prossimo sia un viaggio nuovo. E' il taglio che tiene separata l'andata dal ritorno: senza, le due si attaccano e il calcolatore deve inventarsi come si passa dall'una all'altra.",
+    andata_ritorno: "Disegna l'andata chiara e sottile e il ritorno piena e marcata, cosi' si distinguono a colpo d'occhio. Si riconoscono dalla distanza da casa: chi si avvicina sta tornando, chi si allontana sta andando.",
+    scosto: "A zero andata e ritorno stanno una sopra l'altra e se ne vede una sola. Alzandolo si affiancano come le corsie di una strada, ognuna alla destra del proprio senso di marcia. Piu' lo alzi meglio si distinguono, ma la linea non passa piu' esattamente dove sei passato. Da lontano lo scostamento viene comunque limitato a una ventina di metri, per non staccare la scia dalla strada.",
+    spessore: 'Quanto grossa la linea del percorso. Sottile se ci sono molte persone sulla mappa, grossa se ne guardi una sola.',
+    alone: "Il telefono non manda un punto, manda un punto e un raggio, che vuol dire 'sono qui dentro, da qualche parte'. Questo disegna quel raggio intorno alla persona, come fa la mappa di Home Assistant. Cambia a ogni lettura, e fa capire subito se la posizione e' precisa o presa male.",
+    frecce: "Delle punte sulla scia che dicono da che parte stava andando. Sono distanziate a occhio e non a metri, cosi' restano poche e non si ammucchiano quando guardi da lontano. Ognuna sta sulla propria corsia, quindi se uno fa la stessa strada all'andata e al ritorno le due file non si accavallano. Nelle soste non ce ne sono.",
+    frecce_colore: 'Vuoto = bianche col bordo scuro, che si leggono sopra qualunque scia e sopra la mappa. Se ne scegli uno prendilo diverso dal colore della persona: uguale, la freccia sparisce dentro la linea.',
+    pallini: "Ogni pallino e' una posizione che il telefono ha davvero mandato, e toccandolo dice di chi e' e a che ora. I pallini sono la verita': la linea fra due pallini lontani e' ricostruita, non misurata.",
+    pallini_dim: 'Piccoli sui percorsi lunghi, dove sono tanti; grandi se ti interessa vedere ogni singola lettura.',
+    passo_pallini: "A 0 si disegna ogni posizione ricevuta, come fa la mappa di Home Assistant. Alzandolo si tengono solo i pallini distanti almeno cosi', e serve quando qualcuno sta fermo tutto il giorno nello stesso posto e manda centinaia di letture sovrapposte.",
+    sosta_linea: "Dentro una sosta le posizioni ballano di decine di metri, e unirle tutte con una linea fa una ragnatela che non c'entra niente. Qui decidi quanto fitta disegnarla: a 0 non si disegna niente e restano solo i pallini; a 100 resta un trattino solo che collega l'ingresso all'uscita; ai valori bassi torna la ragnatela. Dentro le soste la linea non segue mai le strade, perche' una sosta e' un posto e non un percorso.",
+    sfuma: "Le posizioni piu' vecchie vengono disegnate piu' chiare e quelle recenti piu' piene, cosi' si capisce a colpo d'occhio in che ordine sono arrivate.",
+  },
+};
+
+const EN = {
+  nomeCarta: 'People map',
+  descrizioneCarta: 'A map with the people, trackers and zones you pick, and the trail '
+    + 'of the past hours snapped onto the real roads.',
+
+  gruppoPersone: 'People and trackers',
+  gruppoZone: 'Zones',
+  boxMappa: 'Map settings',
+  boxMappaSotto: 'Backgrounds, zoom, tracking, roads',
+  boxPersona: 'Photo, colour, size, transparency',
+  boxZona: 'Photo, icon, colour, size, transparency',
+  boxVia: 'Roads and trips',
+  boxViaSotto: 'Road snapping, stops, outbound and return, dots',
+  togli: 'Remove',
+  togliDallaMappa: 'Remove from the map',
+  caricaFoto: 'Upload a photo',
+  cambiaFoto: 'Change photo',
+
+  andata: 'Outbound',
+  ritorno: 'Return',
+  sosta: 'Stop',
+  scia: 'Trail',
+  cartellinoScia: (verso, chi, da, a) => chi + ' — ' + verso + ', ' + da + ' to ' + a,
+
+  sfondi: {
+    stradale: 'Street',
+    scuro: 'Dark',
+    satellite: 'Satellite',
+    vie: 'Streets and names',
+    topografico: 'Topographic',
+  },
+  aggancio: { no: 'No, just join the dots', valhalla: 'Valhalla', osrm: 'OSRM' },
+  profilo: {
+    automatico: 'Work it out automatically',
+    piedi: 'On foot',
+    bici: 'By bike',
+    auto: 'By car',
+    bus: 'By bus',
+  },
+
+  etichette: {
+    entity: 'Who or what',
+    mostra: 'Show this zone on the map',
+    nome: 'Name to write on the zone',
+    icona: 'Icon',
+    colore: 'Colour',
+    dim: 'Icon size',
+    opacita: 'How visible it is',
+    nuova: 'Add a person, a tracker or a zone',
+    sfondo: 'Map background',
+    sfondo_cartellino: 'Background of the mini map in the card popup',
+    ingrandimento: 'How far it may zoom in when framing itself',
+    ore: 'How many hours of trail to show',
+    gruppo_opacita: 'How visible the group badge is',
+    aggancio: 'Who works out the roads',
+    via: 'Snap the trail onto the roads',
+    profilo: 'How they were travelling',
+    via_salto: 'Beyond this distance, work out the road (m)',
+    via_giro: 'How much longer a computed route may be (%)',
+    usa_indirizzo: 'Also use the geocoded location sensor',
+    fermo_m: 'Below this displacement they are stopped, not travelling (m)',
+    pausa_min: 'After this many minutes stopped, the trip is over',
+    andata_ritorno: 'Tell outbound and return apart',
+    scosto: 'How far apart to draw outbound and return',
+    spessore: 'Thickness of the road-snapped trail',
+    alone: 'Accuracy halo',
+    frecce: 'Direction arrows',
+    frecce_colore: 'Arrow colour',
+    pallini: 'Mark the positions received',
+    pallini_dim: 'Dot size',
+    passo_pallini: 'Keep dots at least this far apart (m)',
+    sosta_linea: 'Line inside stops (m)',
+    sfuma: 'Fade the older parts',
+  },
+
+  aiuti: {
+    entity: 'A person, a tracker or a zone. It needs latitude and longitude, otherwise there is nothing to draw on the map.',
+    mostra: 'Off, the zone disappears from the drawing: no circle, no photo, no name. It stays here in the list with all its settings though, ready to switch back on.',
+    nome: 'The name written inside the circle. Leave it empty to use the one from Home Assistant. It is mostly for shortening it: a long name on a small circle does not fit and disappears.',
+    icona: 'The icon inside the zone circle. Empty = the one the zone already has in Home Assistant. If you upload a photo the photo wins and the icon is no longer visible.',
+    colore: 'The colour of the trail, of the icon border and of the zone circle. Empty = your theme primary colour.',
+    dim: 'How big the icon is on the map. Small for someone who barely moves, big for someone you want to spot at a glance. On zones it only affects the icon: a photo always fills the whole circle.',
+    opacita: 'At 100 it is solid; lower it and you see the map through it. Handy when two people are almost in the same spot and one covers the other.',
+    sfondo: 'How the big map looks: street, the same one dark for the evening, satellite imagery, a clean one with large street names, or topographic with contour lines. You can also switch on the fly with the button at the top right.',
+    sfondo_cartellino: 'How the mini map looks inside the popup that opens when you tap a person. In there you can also switch with the little Google square at the bottom left.',
+    ingrandimento: 'When the map frames itself, this is as far as it may zoom in. 14 shows the town, 16 the neighbourhood, 18 the courtyard. Without a limit, two people standing close together would make the map jump right onto the houses.',
+    ore: 'How far back in time to show the trail. At 0 you only see where they are now, with no route at all. The more hours you ask for, the longer the card takes to draw the first time.',
+    gruppo_opacita: 'When two people end up almost in the same spot, their icons become a single badge with the number of them. Here you choose how visible that badge is: 100 solid, 10 nearly transparent. Tap it and the faces fan out.',
+    aggancio: 'Who works out the roads when the card has to rebuild a piece of route. Valhalla and OSRM are two free public services, no sign-up needed. With No nothing ever leaves your home, and trails stay straight lines between one position and the next. Then, for each person, you decide whether to use it.',
+    via: 'A phone reports positions that land a few metres off the road, and now and then it skips one. On, the trail is snapped onto the real road and the missing pieces are filled following the right route for that means of travel. Off, the line simply joins the positions as they are: rougher, but nothing is computed.',
+    profilo: "It changes the rules the router obeys. On foot one-way streets do not count, by bike hardly ever, by car always; by bus you may use lanes and forecourts reserved for public transport. Left on 'Work it out automatically' it looks at the speed of each trip: up to 7 km/h on foot, up to 25 by bike, above that by car. It only considers stretches at least 150 metres long, because manoeuvring near home is slow even in a car.",
+    via_salto: 'This is the most important setting of all, because it decides HOW each piece of trail is rebuilt. Below this distance the card snaps the trace onto the road; above it, it computes the route from one point to the next. The difference is big: computing a route respects one-way streets and access restrictions, snapping a trace does not, and every so often it puts the trail down a private lane or sends it around a roundabout. If you see wrong turns, LOWER IT: at 120 more stretches get computed and the trail obeys the rules of the road. Raising it saves requests but brings the errors back.',
+    via_giro: 'The brake against invented detours. A real road is always longer than the straight line, but not three times longer: here you say how much longer it may be before the route is thrown away. At 200 it accepts up to twice plus two hundred metres; beyond that the card gives up and draws a straight line. If you see absurd detours lower it, if you see too many straight lines raise it.',
+    usa_indirizzo: 'The phone also sends the address on a channel of its own, with a coordinate inside. Careful: that coordinate is not where you are, it is where the address it found is, often the centre of the building. On some phones it always answers with the same two or three fixed points, which show up on the map as dots where you have never been. Turn it on only if your tracker goes quiet often, and check the result.',
+    fermo_m: 'It tells someone travelling from someone standing still. A stationary phone still reports hundreds of positions that wander by tens of metres: if over a whole stretch it never gets further than this, it is not a trip but a stop, and it is neither drawn as a route nor sent to the router. Too low and every breath of the GPS becomes a fake trip; too high and two nearby places become one.',
+    pausa_min: 'How long they must stay put for a trip to count as finished and the next one to be a new trip. It is the cut that keeps the outbound leg separate from the return: without it the two get joined and the router has to invent how you got from one to the other.',
+    andata_ritorno: 'Draws the outbound leg light and thin and the return solid and bold, so you can tell them apart at a glance. They are recognised from the distance to home: getting closer means returning, getting further means going.',
+    scosto: 'At zero the outbound and return legs sit on top of each other and you only see one. Raise it and they run side by side like lanes, each on the right of its own direction of travel. The higher you go the easier they are to tell apart, but the line no longer passes exactly where you did. Zoomed out the offset is capped at about twenty metres anyway, so the trail does not drift off the road.',
+    spessore: 'How thick the route line is. Thin if there are many people on the map, thick if you are looking at just one.',
+    alone: "A phone does not report a point, it reports a point and a radius, meaning 'I am somewhere inside here'. This draws that radius around the person, like the built-in Home Assistant map does. It changes with every reading and tells you at once whether a position is precise or poor.",
+    frecce: 'Small arrowheads along the trail telling you which way they were going. They are spaced by how they look, not by metres, so they stay few and never pile up when you zoom out. Each one sits on its own lane, so if someone takes the same road out and back the two rows never overlap. There are none inside stops.',
+    frecce_colore: 'Empty = white with a dark outline, which reads over any trail and over the map. If you pick one, pick a colour different from the person: the same colour makes the arrow vanish inside the line.',
+    pallini: 'Every dot is a position the phone actually reported, and tapping it tells you whose it is and at what time. The dots are the truth: the line between two distant dots is rebuilt, not measured.',
+    pallini_dim: 'Small on long routes, where there are many of them; big if you care about seeing every single reading.',
+    passo_pallini: 'At 0 every position received is drawn, like the built-in Home Assistant map does. Raise it and only dots at least this far apart are kept, which helps when someone stays all day in the same place and reports hundreds of overlapping readings.',
+    sosta_linea: 'Inside a stop the positions wander by tens of metres, and joining them all with a line makes a cobweb that means nothing. Here you decide how dense to draw it: at 0 nothing is drawn and only the dots remain; at 100 a single short segment links the way in to the way out; at low values the cobweb comes back. Inside stops the line never follows the roads, because a stop is a place and not a route.',
+    sfuma: 'Older positions are drawn lighter and recent ones more solid, so you can tell at a glance in which order they arrived.',
+  },
+};
+
+const LINGUE = { it: IT, en: EN };
+
+/**
+ * Che lingua parla Home Assistant. Italiano se lo e', inglese per tutto il
+ * resto: e' la lingua che piu' gente legge, e la scheda non ne conosce altre.
+ */
+export function parla(hass) {
+  const l = String(
+    (hass && hass.locale && hass.locale.language) || (hass && hass.language) || 'en'
+  ).slice(0, 2).toLowerCase();
+  return LINGUE[l] || LINGUE.en;
+}

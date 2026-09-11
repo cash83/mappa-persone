@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 380" width="880" height="380" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <rect width="880" height="380" fill="#f3f6f4"/>
+  <text x="30" y="34" font-size="19" font-weight="600" fill="#1f2a36">Le due strade per ricostruire un pezzo di scia</text>
+  <text x="30" y="54" font-size="13" fill="#5a6875">Lo decide una sola impostazione: “oltre questa distanza calcola la strada”.</text>
+
+  <!-- ============ sinistra: aggancio ============ -->
+  <g>
+    <rect x="30" y="76" width="390" height="270" rx="12" fill="#fff" stroke="#dde4df"/>
+    <text x="50" y="104" font-size="15" font-weight="600" fill="#1f2a36">Letture vicine → si appoggia la traccia</text>
+
+    <g fill="none" stroke="#e8ded0" stroke-width="13" stroke-linecap="round">
+      <path d="M70 300 L180 300 L250 240 L380 232"/>
+      <path d="M180 300 L196 170"/>
+    </g>
+    <path d="M70 300 L180 300 L250 240 L380 232" fill="none" stroke="#2f9e6b" stroke-width="6" stroke-linecap="round"/>
+    <g fill="#2f9e6b" stroke="#fff" stroke-width="1.5">
+      <circle cx="74" cy="296" r="5"/><circle cx="118" cy="304" r="5"/>
+      <circle cx="168" cy="296" r="5"/><circle cx="214" cy="270" r="5"/>
+      <circle cx="258" cy="236" r="5"/><circle cx="320" cy="236" r="5"/>
+      <circle cx="376" cy="228" r="5"/>
+    </g>
+    <text x="50" y="332" font-size="12.5" fill="#4c5a67">Le posizioni bastano a descrivere la strada.</text>
+  </g>
+
+  <!-- ============ destra: percorso ============ -->
+  <g>
+    <rect x="450" y="76" width="400" height="270" rx="12" fill="#fff" stroke="#dde4df"/>
+    <text x="470" y="104" font-size="15" font-weight="600" fill="#1f2a36">Buco lungo → si calcola il percorso</text>
+
+    <g fill="none" stroke="#e8ded0" stroke-width="13" stroke-linecap="round">
+      <path d="M490 300 L600 300 L660 240 L810 232"/>
+      <path d="M600 300 L616 170"/>
+    </g>
+    <path d="M490 300 L600 300 L660 240 L810 232" fill="none" stroke="#2f6fed" stroke-width="6" stroke-linecap="round"/>
+    <path d="M494 296 L806 228" fill="none" stroke="#c0392b" stroke-width="3" stroke-dasharray="7 6"/>
+    <g fill="#2f6fed" stroke="#fff" stroke-width="1.5">
+      <circle cx="494" cy="296" r="6"/><circle cx="806" cy="228" r="6"/>
+    </g>
+    <text x="470" y="332" font-size="12.5" fill="#4c5a67">Fra le due letture non c’è niente: la strada la sceglie il calcolatore.</text>
+  </g>
+
+  <rect x="30" y="356" width="820" height="0" fill="none"/>
+  <text x="30" y="372" font-size="12.5" fill="#7c3a00">Solo chi CALCOLA un percorso rispetta sensi unici e divieti. Se vedi curve sbagliate, abbassa quella distanza.</text>
+</svg>

@@ -36,6 +36,9 @@ const SFOLTISCI = 25;            // metri: sotto questa distanza la lettura non 
 const FERMO = 1;                 // km/h: sotto questa andatura e' il GPS che balla da fermo
 const RICALCO = 10;              // metri: sotto questo due punti sono lo stesso posto
 const RICALCO_MAX = 250;         // metri di sperone ricalcato che si accetta di cancellare
+const RICALCO_PREC = 40;         /* metri di precisione: una lettura piu' precisa di
+                                    cosi' e' dove dice di essere, e se la scia va e
+                                    torna li' vuol dire che ci e' andata davvero */
 const TELETRASPORTO = 200;       /* km/h: sopra questa andatura non c'e' piu' un
                                     viaggio, c'e' una lettura sbagliata */
 const COSTI = {
@@ -729,6 +732,37 @@ async function pezzoDaBlocco(blocco, o) {
         if (!b.via) guasto = true;
       }
     }
+  }
+
+  /*
+   * SE DUE TRATTE CALCOLATE SI RICALCANO, LA LETTURA IN MEZZO E' SBAGLIATA.
+   * Succede quando cade cento metri piu' in la' sulla stessa strada: la prima
+   * tratta ci va, la seconda torna indietro. Cancellare il ricalco dal disegno
+   * non basta, perche' quello che resta e' una svolta che li' e' vietata: le due
+   * tratte sono calcolate una per una, e il divieto sta nel punto dove si
+   * attaccano, che nessuna delle due ha guardato. Meglio buttare la lettura e
+   * chiedere UN pezzo solo da prima a dopo: cosi' il divieto ricade dentro il
+   * calcolo, e il calcolatore lo rispetta.
+   */
+  for (let k = 0; k + 1 < fare.length; k++) {
+    const uno = fare[k];
+    const due = fare[k + 1];
+    if (uno.tipo !== 'buco' || due.tipo !== 'buco' || !uno.via || !due.via) continue;
+    if (!ricalco(uno.via, due.via)) continue;
+    // si butta solo una lettura IMPRECISA: una buona sta dove dice, e allora il
+    // va e torna e' successo davvero (in fondo a un vicolo, dentro un piazzale)
+    const prec = Number(uno.b[3]);
+    if (prec && prec <= RICALCO_PREC) continue;
+    const quanto = mappaDistanza(uno.a, due.b);
+    let g = null;
+    try {
+      g = await rotte([uno.a, due.b], profilo);
+    } catch (e) {
+      g = null;
+    }
+    const via = g && g[0];
+    if (!via || lunghezza(via) > quanto * (o.giro / 100) + 200) continue;
+    fare.splice(k, 2, { tipo: 'buco', a: uno.a, b: due.b, d: quanto, via: via });
   }
 
   const linea = [];

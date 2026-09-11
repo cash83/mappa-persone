@@ -3,7 +3,7 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.1.0';
+export const MAPPA_VERSIONE = '3.1.1';
 
 /** dove sono i file sul box: serve per caricare Leaflet da noi, non da internet */
 export const MAPPA_BASE = '/local/community/mappa-persone/';
@@ -87,8 +87,8 @@ export const MAPPA_SFONDO_CART = 'satellite';  // e quello della mappina nel car
 export const MAPPA_SFONDI = [
   {
     /*
-     * Stradale: i tasselli di CARTO, gli stessi della scheda mappa che Home
-     * Assistant ha di suo. NON quelli di tile.openstreetmap.org.
+     * Stradale: i tasselli di Esri, gli stessi di cui usiamo gia' il satellite e
+     * la mappa scura. NON quelli di tile.openstreetmap.org, e nemmeno CARTO.
      *
      * PERCHE'. I server di OpenStreetMap sono di volontari, e la loro regola
      * d'uso chiede che chi li interroga si faccia riconoscere. Home Assistant
@@ -99,15 +99,17 @@ export const MAPPA_SFONDI = [
      * il cartello "App is not following the tile usage policy": la mappa si
      * riempie di quadrati gialli e neri. Non e' un guasto di passaggio ne' una
      * cosa che si aggiusta da qui: e' la regola, ed e' giusta.
+     *
+     * E CARTO? Provato, e bocciato in mezz'ora: i suoi tasselli liberi adesso
+     * arrivano con la scritta API KEY REQUIRED stampata sopra, ripetuta su
+     * tutta la mappa. Una chiave non la si puo' mettere in una scheda che
+     * scarica chiunque, quindi Esri: nessuna chiave, nessuna intestazione, e
+     * qui rispondono da mesi.
      */
     chiave: 'stradale',
     nome: 'Stradale',
-    url: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-    opzioni: {
-      maxNativeZoom: 19,
-      maxZoom: 20,
-      attribution: '&copy; OpenStreetMap, tasselli &copy; CARTO',
-    },
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    opzioni: { maxNativeZoom: 19, maxZoom: 20, attribution: '&copy; Esri' },
   },
   {
     // Scuro: NON Carto. Quei tasselli adesso vogliono una chiave e sopra la

@@ -196,9 +196,8 @@ The zone circle always uses the **real radius** set in Home Assistant.
 
 ## Privacy
 
-* Map tiles come from CARTO and Esri, so the tiles you look at are requested from them. The
-  default background uses the same servers as the map card Home Assistant ships, not the
-  volunteer OpenStreetMap ones: those ask whoever queries them to identify itself, and a
+* Map tiles come from Esri, so the tiles you look at are requested from them. The
+  default background does NOT use the volunteer OpenStreetMap servers: those ask whoever queries them to identify itself, and a
   card running in a browser cannot.
 * Road snapping, when enabled, sends the **coordinates of the trail** to the public
   [Valhalla](https://valhalla1.openstreetmap.de) or [OSRM](https://router.project-osrm.org)
@@ -210,8 +209,8 @@ The zone circle always uses the **real radius** set in Home Assistant.
 
 ## Credits
 
-Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, tiles © [CARTO](https://carto.com/attributions).
-Satellite and dark tiles © Esri. Routing by [Valhalla](https://valhalla.readthedocs.io) and
+Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, street, satellite and dark tiles © Esri.
+Routing by [Valhalla](https://valhalla.readthedocs.io) and
 [OSRM](https://project-osrm.org). Map rendering by [Leaflet](https://leafletjs.com) 1.9.4, bundled in `leaflet/` under its own BSD-2 licence.
 
 Released under the [MIT licence](LICENSE).

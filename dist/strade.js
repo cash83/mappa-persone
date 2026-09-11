@@ -1,5 +1,5 @@
-import { mappaDistanza } from './utili.js?v=3.0.4';
-import { MAPPA_VERSIONE } from './costanti.js?v=3.0.4';
+import { mappaDistanza } from './utili.js?v=3.0.5';
+import { MAPPA_VERSIONE } from './costanti.js?v=3.0.5';
 
 /**
  * LA VIA SOTTO LA SCIA. E' lo schema che funzionava, rimesso com'era:
@@ -496,11 +496,24 @@ async function aggancia(punti, profilo) {
  * lungo del vero, perche' il calcolatore partiva dalla strada sbagliata.
  */
 async function rotte(punti, profilo) {
+  /*
+   * IL FILTRO SULLE STRADINE. Una lettura presa male cade spesso a una ventina
+   * di metri dalla strada, e li' dietro c'e' quasi sempre una corsia di
+   * servizio: il piazzale di un magazzino, l'accesso a un cortile. Il
+   * calcolatore aggancia la lettura a QUELLA, perche' e' la piu' vicina, e
+   * allora deve entrarci e uscirne: viene fuori un cappio di duecento metri
+   * attaccato alla strada, e la scia sembra aver fatto un giro che non ha fatto.
+   * Chiedendo di agganciare solo a strade di paese o meglio il cappio sparisce.
+   * Vale solo per l'auto: a piedi i vialetti e i passaggi sono la strada giusta,
+   * e togliere quelli sarebbe peggio del male.
+   */
+  const tappa = { radius: 30, type: 'break' };
+  if (profilo === 'auto') tappa.search_filter = { min_road_class: 'residential' };
   const r = await chiedi(VALHALLA + '/route', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      locations: punti.map((p) => ({ lat: p[0], lon: p[1], radius: 30, type: 'break' })),
+      locations: punti.map((p) => Object.assign({ lat: p[0], lon: p[1] }, tappa)),
       costing: profilo,
       directions_options: { units: 'kilometers' },
     }),

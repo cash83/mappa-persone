@@ -3,7 +3,7 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.0.7';
+export const MAPPA_VERSIONE = '3.1.0';
 
 /** dove sono i file sul box: serve per caricare Leaflet da noi, non da internet */
 export const MAPPA_BASE = '/local/community/mappa-persone/';
@@ -86,10 +86,28 @@ export const MAPPA_SFONDO_CART = 'satellite';  // e quello della mappina nel car
 
 export const MAPPA_SFONDI = [
   {
+    /*
+     * Stradale: i tasselli di CARTO, gli stessi della scheda mappa che Home
+     * Assistant ha di suo. NON quelli di tile.openstreetmap.org.
+     *
+     * PERCHE'. I server di OpenStreetMap sono di volontari, e la loro regola
+     * d'uso chiede che chi li interroga si faccia riconoscere. Home Assistant
+     * pero' manda a ogni pagina `Referrer-Policy: no-referrer`, e dal browser
+     * una scheda non puo' mettere ne' un Referer ne' uno User-Agent suo: sono
+     * intestazioni che il browser non lascia toccare. Quindi le richieste
+     * arrivano la' anonime, e prima o poi tornano indietro tutte con un 403 e
+     * il cartello "App is not following the tile usage policy": la mappa si
+     * riempie di quadrati gialli e neri. Non e' un guasto di passaggio ne' una
+     * cosa che si aggiusta da qui: e' la regola, ed e' giusta.
+     */
     chiave: 'stradale',
     nome: 'Stradale',
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    opzioni: { maxNativeZoom: 19, maxZoom: 20, attribution: '&copy; OpenStreetMap' },
+    url: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+    opzioni: {
+      maxNativeZoom: 19,
+      maxZoom: 20,
+      attribution: '&copy; OpenStreetMap, tasselli &copy; CARTO',
+    },
   },
   {
     // Scuro: NON Carto. Quei tasselli adesso vogliono una chiave e sopra la
@@ -109,8 +127,13 @@ export const MAPPA_SFONDI = [
     opzioni: { maxNativeZoom: 19, maxZoom: 20, attribution: '&copy; Esri' },
   },
   {
-    // la stessa carta della voce Stradale ma nella versione umanitaria: piu'
-    // contrasto, nomi e sentieri piu' marcati, verde piu' acceso
+    /*
+     * La versione umanitaria della carta: piu' contrasto, nomi e sentieri piu'
+     * marcati, verde piu' acceso. Sta pero' su server di volontari come quelli
+     * di OpenStreetMap, con la stessa regola d'uso: se un giorno tornano dei
+     * 403 al posto dei tasselli, la causa e' quella e non un guasto. Resta
+     * perche' e' una scelta, non il fondo di serie.
+     */
     chiave: 'vie',
     nome: 'Vie e nomi',
     url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',

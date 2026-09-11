@@ -199,8 +199,10 @@ Il cerchio della zona usa sempre il **raggio vero** impostato in Home Assistant.
 
 ## Privacy
 
-* Le piastrelle della mappa arrivano da OpenStreetMap e da Esri, quindi quelle che guardi
-  vengono chieste a loro.
+* Le piastrelle della mappa arrivano da CARTO e da Esri, quindi quelle che guardi vengono
+  chieste a loro. Il fondo di serie usa gli stessi server della scheda mappa che Home
+  Assistant ha di suo, non quelli di volontari di OpenStreetMap: quelli chiedono che chi
+  li interroga si faccia riconoscere, e dal browser una scheda non puo'.
 * L'aggancio alle strade, quando è acceso, manda le **coordinate della scia** ai server
   pubblici [Valhalla](https://valhalla1.openstreetmap.de) o
   [OSRM](https://router.project-osrm.org). Con `aggancio: no` non esce niente dalla tua rete e
@@ -212,7 +214,7 @@ Il cerchio della zona usa sempre il **raggio vero** impostato in Home Assistant.
 
 ## Ringraziamenti
 
-Dati della mappa © [OpenStreetMap](https://www.openstreetmap.org/copyright).
+Dati della mappa © [OpenStreetMap](https://www.openstreetmap.org/copyright), tasselli © [CARTO](https://carto.com/attributions).
 Satellite e mappa scura © Esri. Calcolo delle strade con
 [Valhalla](https://valhalla.readthedocs.io) e [OSRM](https://project-osrm.org).
 Mappa disegnata con [Leaflet](https://leafletjs.com) 1.9.4, incluso in `leaflet/` con la sua licenza BSD-2.

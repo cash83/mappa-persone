@@ -6,6 +6,7 @@ import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js';
 import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js';
 import { agganciaStrade } from './strade.js';
 import { mappaElenco, mappaRighe, mappaSua } from './utili.js';
+import { parla } from './lingue.js';
 
 /**
  * LA SCHEDA. Tiene insieme i due pezzi e parla con Home Assistant: riceve la
@@ -37,12 +38,6 @@ function inAnteprima(chi) {
 }
 
 /**
- * Le misure della via di ogni persona, in una riga sola. Servono a capire CHI e'
- * cambiato quando si tocca un cursore: si rifa' la scia solo a quella persona e
- * SUBITO, senza aspettare che qualcuno ricarichi la pagina. Prima si cambiava
- * un numero e non succedeva niente, e sembrava che il cursore fosse rotto.
- */
-/**
  * Da DOVE arrivano le posizioni, in una riga sola. Serve a capire quando lo
  * storico che si ha in mano non vale piu' e va richiesto daccapo: cambia se
  * cambia l'elenco delle entita', le ore, oppure se a qualcuno si accende o si
@@ -58,6 +53,12 @@ function firmaFonti(config) {
   ).join(',');
 }
 
+/**
+ * Le misure della via di ogni persona, in una riga sola. Servono a capire CHI e'
+ * cambiato quando si tocca un cursore: si rifa' la scia solo a quella persona e
+ * SUBITO, senza aspettare che qualcuno ricarichi la pagina. Prima si cambiava
+ * un numero e non succedeva niente, e sembrava che il cursore fosse rotto.
+ */
 function firmaVie(config) {
   const f = {};
   mappaRighe(config).forEach((r) => {
@@ -167,7 +168,8 @@ export class MappaPersone extends HTMLElement {
       L, dentro, () => this._centra(), this._config.sfondo, () => this._dipingi(),
       () => (inAnteprima(this)
         ? ':anteprima'
-        : mappaElenco(this._config).join(','))
+        : mappaElenco(this._config).join(',')),
+      parla(this._hass)
     );
     /* Adesso la scheda E' attaccata alla pagina: si sa se e' l'anteprima o
        quella vera, quindi la memoria dell'inquadratura si legge ORA, prima di
@@ -209,11 +211,26 @@ export class MappaPersone extends HTMLElement {
     });
   }
 
-  /** lo storico, una richiesta alla volta e senza rimartellare se va male */
+  /**
+   * Lo storico, una richiesta alla volta e senza rimartellare se va male.
+   *
+   * TRAPPOLA: una richiesta ci mette il suo tempo, e in mezzo l'utente puo'
+   * cambiare le ore o aggiungere una persona. Prima quella seconda chiamata
+   * usciva subito - c'era gia' una lettura in corso - e quando la prima tornava
+   * scriveva il SUO risultato, che era quello vecchio: si allungavano le ore e
+   * per cinque minuti non cambiava niente. Adesso chi trova la porta chiusa
+   * lascia un biglietto, e chi esce per ultimo ricontrolla se quello che ha
+   * letto vale ancora.
+   */
   async _storico() {
     const ore = Number(this._config && this._config.ore) || 0;
-    if (!this._hass || !ore || this._leggendo) return;
+    if (!this._hass || !ore) return;
+    if (this._leggendo) {
+      this._daRileggere = true;
+      return;
+    }
     this._leggendo = true;
+    const chiesto = firmaFonti(this._config);
     try {
       this._storia = await leggiStoria(this._hass, mappaRighe(this._config), ore);
       this._letta = Date.now();
@@ -224,6 +241,10 @@ export class MappaPersone extends HTMLElement {
       console.warn('[mappa-persone] storico non letto:', e);
     }
     this._leggendo = false;
+    if (this._daRileggere || chiesto !== firmaFonti(this._config)) {
+      this._daRileggere = false;
+      this._storico();
+    }
   }
 
   /**

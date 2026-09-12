@@ -1,12 +1,13 @@
 import {
   MAPPA_DIM, MAPPA_MUCCHIO, MAPPA_MUCCHIO_OPACITA, MAPPA_OPACITA, MAPPA_PRINCIPALE,
   MAPPA_SFONDO_CART, MAPPA_SUE, MAPPA_VICINO, MAPPA_ZONA_SPENTA,
-} from './costanti.js?v=3.1.4';
+} from './costanti.js?v=3.2.0';
 import {
-  mappaAffianca, mappaColore, mappaDistanza, mappaElenco, mappaOra, mappaRighe, mappaSua,
-} from './utili.js?v=3.1.4';
-import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.1.4';
-import { parla } from './lingue.js?v=3.1.4';
+  mappaAffianca, mappaColore, mappaDistanza, mappaElenco, mappaOra, mappaRighe, mappaSalta,
+  mappaSua,
+} from './utili.js?v=3.2.0';
+import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.2.0';
+import { parla } from './lingue.js?v=3.2.0';
 
 /**
  * LA GESTIONE DELLE ENTITA'. Qui dentro sta tutto e solo quello che riguarda
@@ -116,7 +117,7 @@ function unisci(a, b) {
  * vanno portati avanti; e l'ora buona e' `last_updated` (`lu`), non
  * `last_changed`, che si muove solo se cambia la scritta dello stato.
  */
-export function puntiDaStoria(elenco, dallIndirizzo) {
+function puntiDaStoria(elenco, dallIndirizzo) {
   const out = [];
   let attr = {};
   for (const s of elenco || []) {
@@ -443,7 +444,7 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
           /* Il nome sopra e l'ora sotto, come fa la scheda di serie. Con la sola
              ora, dove due persone si incrociano non si capiva di chi fosse il
              pallino che si era appena toccato. */
-          const detto = '<b>' + salta(nome) + '</b><br>' + mappaOra(p[2]);
+          const detto = '<b>' + mappaSalta(nome) + '</b><br>' + mappaOra(p[2]);
           if (c.getTooltip()) c.setTooltipContent(detto);
           else c.bindTooltip(detto, { direction: 'top' });
         });
@@ -513,8 +514,11 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
       m.setIcon(fai());
       m.__segno = segno;
     }
-    if (m.getTooltip()) m.setTooltipContent(nome);
-    else m.bindTooltip(nome, { direction: 'top', offset: [0, -d / 2] });
+    /* anche qui il nome va scappato: Leaflet lo mette dentro dell'HTML, e un
+       nome con dentro una parentesi angolare spaccava il riquadro */
+    const detta = mappaSalta(nome);
+    if (m.getTooltip()) m.setTooltipContent(detta);
+    else m.bindTooltip(detta, { direction: 'top', offset: [0, -d / 2] });
     if (!m.getPopup()) {
       // `autoPan` spento: aprendo il cartellino la mappa NON si sposta piu'
       m.bindPopup('', { className: 'mappa-cart', closeButton: true, autoPan: false });
@@ -664,7 +668,7 @@ function disegnaMucchi(carta, insieme, vivi, config) {
       m.setIcon(fai());
       m.__segno = html;
     }
-    const nomi = mu.chi.map((x) => x.nome).join(', ');
+    const nomi = mu.chi.map((x) => mappaSalta(x.nome)).join(', ');
     if (m.getTooltip()) m.setTooltipContent(nomi);
     else m.bindTooltip(nomi, { direction: 'top', offset: [0, -mu.d / 2] });
     m.off('click');
@@ -734,11 +738,6 @@ function versoDaiPunti(hass, pezzo, punti, n) {
   // pezzo solo: conta se finisce piu' vicino o piu' lontano da casa
   if (Math.abs(arrivo - partenza) > 150) return uno(arrivo < partenza);
   return uno(ritornoOandata(hass, pezzo, n));
-}
-
-/** il nome scritto dentro un cartellino non deve poter diventare codice */
-function salta(t) {
-  return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /** un pallino ogni tot metri: chi sta fermo ne manda centinaia sovrapposti */
@@ -813,7 +812,12 @@ export function firmaEntita(hass, config) {
       const s = hass.states[e];
       if (!s) return e + ':-';
       const a = s.attributes || {};
-      return e + ':' + a.latitude + ',' + a.longitude + ',' + a.entity_picture;
+      /* Ci vanno anche la PRECISIONE e lo STATO: l'alone e' grande quanto la
+         precisione e il cartellino dice "A casa" o "Fuori", e quelle due cose
+         cambiano anche stando fermi. Senza, l'alone restava della misura di
+         prima e il cartellino diceva ancora "Fuori" da dentro casa. */
+      return e + ':' + a.latitude + ',' + a.longitude + ',' + a.entity_picture
+        + ',' + a.gps_accuracy + ',' + s.state;
     })
     .join('|');
 }

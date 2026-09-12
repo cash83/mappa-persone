@@ -34,6 +34,29 @@ const IT = {
   scia: 'Scia',
   cartellinoScia: (verso, chi, da, a) => verso + ' di ' + chi + ', dalle ' + da + ' alle ' + a,
 
+  /* Il cartellino che si apre toccando una faccia. Prima era tutto scritto a
+     mano in italiano dentro cartellino.js, e in inglese restava italiano. */
+  cart: {
+    aCasa: 'A casa',
+    fuori: 'Fuori',
+    adesso: 'adesso',
+    minuti: (n) => n + ' minuti fa',
+    ore: (n) => n + ' ore fa',
+    giorni: (n) => n + ' giorni fa',
+    dettagli: 'Dettagli',
+    chiudiDettagli: 'Chiudi dettagli',
+    maps: 'Maps',
+    chiudiMaps: 'Chiudi Maps',
+    via: 'Via',
+    citta: 'Comune',
+    precisione: 'Precisione',
+    daCasa: 'Da casa',
+    rilevatoDa: 'Rilevato da',
+    coordinate: 'Coordinate',
+    apriMaps: 'Apri in Google Maps',
+  },
+  mirino: 'Torna sulle entita',
+
   sfondi: {
     stradale: 'Stradale',
     scuro: 'Scuro',
@@ -142,6 +165,27 @@ const EN = {
   sosta: 'Stop',
   scia: 'Trail',
   cartellinoScia: (verso, chi, da, a) => chi + ' — ' + verso + ', ' + da + ' to ' + a,
+
+  cart: {
+    aCasa: 'Home',
+    fuori: 'Away',
+    adesso: 'just now',
+    minuti: (n) => n + ' min ago',
+    ore: (n) => n + ' h ago',
+    giorni: (n) => n + ' days ago',
+    dettagli: 'Details',
+    chiudiDettagli: 'Close details',
+    maps: 'Maps',
+    chiudiMaps: 'Close Maps',
+    via: 'Street',
+    citta: 'Town',
+    precisione: 'Accuracy',
+    daCasa: 'From home',
+    rilevatoDa: 'Seen by',
+    coordinate: 'Coordinates',
+    apriMaps: 'Open in Google Maps',
+  },
+  mirino: 'Back to the entities',
 
   sfondi: {
     stradale: 'Street',

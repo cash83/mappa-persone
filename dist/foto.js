@@ -11,9 +11,12 @@
  */
 
 /** ritaglia al centro il quadrato piu' grande che ci sta, e rimpicciolisce a 512 */
-export function fotoQuadrata(file) {
+function fotoQuadrata(file) {
   return new Promise((ok) => {
     const img = new Image();
+    // l'indirizzo temporaneo si libera in tutti e due i casi: senza, ogni foto
+    // caricata si lasciava dietro la sua copia in memoria fino a fine pagina
+    const via = () => { try { URL.revokeObjectURL(img.src); } catch (e) { /* pazienza */ } };
     img.onload = () => {
       const lato = Math.min(img.width, img.height);
       const tela = document.createElement('canvas');
@@ -24,9 +27,9 @@ export function fotoQuadrata(file) {
         (img.width - lato) / 2, (img.height - lato) / 2, lato, lato,
         0, 0, 512, 512
       );
-      tela.toBlob((b) => ok(b || file), 'image/jpeg', 0.9);
+      tela.toBlob((b) => { via(); ok(b || file); }, 'image/jpeg', 0.9);
     };
-    img.onerror = () => ok(file);   // se non si riesce a leggerla, si manda com'e'
+    img.onerror = () => { via(); ok(file); };   // se non si legge, si manda com'e'
     img.src = URL.createObjectURL(file);
   });
 }

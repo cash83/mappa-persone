@@ -199,6 +199,8 @@ The zone circle always uses the **real radius** set in Home Assistant.
 * Map tiles come from Esri, so the tiles you look at are requested from them. The
   default background does NOT use the volunteer OpenStreetMap servers: those ask whoever queries them to identify itself, and a
   card running in a browser cannot.
+* The **Maps** button inside a person's popup opens a small Google map, and to do that it
+  sends Google **that person's current position**. Nothing leaves until you press it.
 * Road snapping, when enabled, sends the **coordinates of the trail** to the public
   [Valhalla](https://valhalla1.openstreetmap.de) or [OSRM](https://router.project-osrm.org)
   servers. With `aggancio: no` nothing ever leaves your network and trails stay straight lines.

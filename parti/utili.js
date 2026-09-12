@@ -26,7 +26,7 @@ export function mappaRighe(config) {
 
 /**
  * Il valore di una voce per questa persona: il suo se ce l'ha, se no quello di
- * partenza. Le quattordici voci della via e dei viaggi vivono qui dentro.
+ * partenza. Le diciotto voci della via e dei viaggi vivono qui dentro.
  */
 export function mappaSua(riga, chiave, predefiniti) {
   const v = riga && riga[chiave];
@@ -61,9 +61,28 @@ export function mappaColore(valore, dentro, ripiego) {
   return quale;
 }
 
-/** l'ora scritta come la legge la gente: 14:07 */
+/**
+ * Una scritta che viene da fuori - il nome di una persona, una via, un comune -
+ * non deve poter diventare codice quando finisce dentro dell'HTML. Si scappano
+ * anche le virgolette: certe scritte finiscono dentro un attributo.
+ */
+export function mappaSalta(t) {
+  return String(t === undefined || t === null ? '' : t)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * L'ora scritta come la legge la gente: 14:07. La lingua NON si impone: prima
+ * c'era scritto 'it-IT' e un inglese si ritrovava l'orario all'italiana dentro
+ * una scheda per il resto tutta in inglese. Senza, decide il browser di chi
+ * guarda, che e' quello che fa ogni altra scheda di Home Assistant.
+ */
 export function mappaOra(quando) {
-  return new Date(quando).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  return new Date(quando).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
 /**

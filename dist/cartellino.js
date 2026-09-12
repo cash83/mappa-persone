@@ -1,4 +1,5 @@
-import { mappaDistanza } from './utili.js?v=3.1.4';
+import { mappaDistanza, mappaSalta } from './utili.js?v=3.2.0';
+import { parla } from './lingue.js?v=3.2.0';
 
 /**
  * IL CARTELLINO che si apre toccando una persona: foto, nome, dove sta e da
@@ -30,7 +31,7 @@ function attributo(attr, pezzo) {
 }
 
 /** la via dove si trova adesso, dal sensore dell'indirizzo */
-export function laVia(hass, ent) {
+function laVia(hass, ent) {
   const nome = sensoreIndirizzo(hass, ent);
   const s = nome && hass.states[nome];
   if (!s) return '';
@@ -43,7 +44,7 @@ export function laVia(hass, ent) {
 }
 
 /** il paese o la citta', dallo stesso sensore dell'indirizzo */
-export function laCitta(hass, ent) {
+function laCitta(hass, ent) {
   const nome = sensoreIndirizzo(hass, ent);
   const s = nome && hass.states[nome];
   if (!s) return '';
@@ -54,14 +55,14 @@ export function laCitta(hass, ent) {
   return pezzi.length > 1 ? pezzi[1].trim() : '';
 }
 
-function daQuanto(quando) {
+function daQuanto(quando, D) {
   const sec = Math.max(0, (Date.now() - new Date(quando).getTime()) / 1000);
-  if (sec < 90) return 'adesso';
+  if (sec < 90) return D.cart.adesso;
   const min = Math.round(sec / 60);
-  if (min < 60) return min + ' minuti fa';
+  if (min < 60) return D.cart.minuti(min);
   const ore = Math.round(min / 60);
-  if (ore < 48) return ore + ' ore fa';
-  return Math.round(ore / 24) + ' giorni fa';
+  if (ore < 48) return D.cart.ore(ore);
+  return D.cart.giorni(Math.round(ore / 24));
 }
 
 function daCasa(hass, st) {
@@ -83,9 +84,14 @@ function rilevatoDa(hass, st) {
 
 function riga(nome, valore) {
   if (!valore) return '';
-  // il valore lungo (una citta' con tre parole) si accorcia coi puntini invece
-  // di andare a capo: il cartellino deve restare basso
-  return '<div class="rg"><span>' + nome + '</span><b title="' + valore + '">' + valore + '</b></div>';
+  /* Il valore lungo (un comune di tre parole) si accorcia coi puntini invece di
+     andare a capo: il cartellino deve restare basso.
+     Il valore arriva da fuori - il nome che uno ha dato a una persona, la via
+     che risponde il geocodificatore - e finisce dentro dell'HTML e dentro un
+     attributo: va scappato tutte e due le volte, se no un apostrofo spacca il
+     cartellino e una parentesi angolare ci infila dentro quello che vuole. */
+  const v = mappaSalta(valore);
+  return '<div class="rg"><span>' + mappaSalta(nome) + '</span><b title="' + v + '">' + v + '</b></div>';
 }
 
 /**
@@ -93,11 +99,12 @@ function riga(nome, valore) {
  * i dettagli e la mappina si aprono e si chiudono senza rifare niente.
  */
 export function cartellino(hass, ent, st, col, cambiato, spazio, sfondo) {
+  const D = parla(hass);
   const lat = Number(st.attributes.latitude);
   const lon = Number(st.attributes.longitude);
   const nome = st.attributes.friendly_name || ent;
   const foto = st.attributes.entity_picture;
-  const dove = st.state === 'home' ? 'A casa' : st.state === 'not_home' ? 'Fuori' : st.state;
+  const dove = st.state === 'home' ? D.cart.aCasa : st.state === 'not_home' ? D.cart.fuori : st.state;
   const prec = st.attributes.gps_accuracy;
 
   const box = document.createElement('div');
@@ -105,22 +112,24 @@ export function cartellino(hass, ent, st, col, cambiato, spazio, sfondo) {
   box.innerHTML =
     '<div class="capo">' +
     '  <div class="ritratto" style="background-color:' + col + ';' +
-    (foto ? "background-image:url('" + foto + "')" : '') + '">' + (foto ? '' : nome.charAt(0).toUpperCase()) + '</div>' +
-    '  <div><div class="nome">' + nome + '</div>' +
-    '  <div class="sotto">' + dove + ' &middot; ' + daQuanto(st.last_changed) + '</div></div>' +
+    (foto ? "background-image:url('" + encodeURI(foto) + "')" : '') + '">' + (foto ? '' : mappaSalta(nome.charAt(0).toUpperCase())) + '</div>' +
+    '  <div><div class="nome">' + mappaSalta(nome) + '</div>' +
+    '  <div class="sotto">' + mappaSalta(dove) + ' &middot; ' + daQuanto(st.last_changed, D) + '</div></div>' +
     '</div>' +
-    '<div class="tasti"><button class="det">Dettagli</button><button class="map">Maps</button></div>' +
+    '<div class="tasti"><button class="det">' + mappaSalta(D.cart.dettagli) + '</button>'
+    + '<button class="map">' + mappaSalta(D.cart.maps) + '</button></div>' +
     '<div class="dettagli" hidden>' +
-    riga('Via', laVia(hass, ent)) +
-    riga('Citta', laCitta(hass, ent)) +
-    riga('Precisione', isNaN(Number(prec)) ? '' : Math.round(prec) + ' m') +
-    riga('Da casa', daCasa(hass, st)) +
-    riga('Rilevato da', rilevatoDa(hass, st)) +
-    riga('Coordinate', lat.toFixed(5) + ', ' + lon.toFixed(5)) +
+    riga(D.cart.via, laVia(hass, ent)) +
+    riga(D.cart.citta, laCitta(hass, ent)) +
+    riga(D.cart.precisione, isNaN(Number(prec)) ? '' : Math.round(prec) + ' m') +
+    riga(D.cart.daCasa, daCasa(hass, st)) +
+    riga(D.cart.rilevatoDa, rilevatoDa(hass, st)) +
+    riga(D.cart.coordinate, lat.toFixed(5) + ', ' + lon.toFixed(5)) +
     '</div>' +
     '<div class="mappina" hidden><div class="telaio"></div></div>' +
     '<a class="fuori" target="_blank" rel="noopener"' +
-    ' href="https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lon + '">Apri in Google Maps &#8599;</a>';
+    ' href="https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lon + '">'
+    + mappaSalta(D.cart.apriMaps) + ' &#8599;</a>';
 
   const det = box.querySelector('.det');
   const map = box.querySelector('.map');
@@ -134,10 +143,10 @@ export function cartellino(hass, ent, st, col, cambiato, spazio, sfondo) {
   // il cartellino diventa piu' alto della scheda
   det.addEventListener('click', () => {
     dettagli.hidden = !dettagli.hidden;
-    det.textContent = dettagli.hidden ? 'Dettagli' : 'Chiudi dettagli';
+    det.textContent = dettagli.hidden ? D.cart.dettagli : D.cart.chiudiDettagli;
     if (!dettagli.hidden && !mappina.hidden) {
       mappina.hidden = true;
-      map.textContent = 'Maps';
+      map.textContent = D.cart.maps;
     }
     avvisa();
   });
@@ -165,10 +174,10 @@ export function cartellino(hass, ent, st, col, cambiato, spazio, sfondo) {
 
   map.addEventListener('click', () => {
     mappina.hidden = !mappina.hidden;
-    map.textContent = mappina.hidden ? 'Maps' : 'Chiudi Maps';
+    map.textContent = mappina.hidden ? D.cart.maps : D.cart.chiudiMaps;
     if (!mappina.hidden && !dettagli.hidden) {
       dettagli.hidden = true;
-      det.textContent = 'Dettagli';
+      det.textContent = D.cart.dettagli;
     }
     // si costruisce solo la prima volta che la si apre
     if (!mappina.hidden && !telaio.firstChild) mostra(sfondo === 'stradale' ? 'm' : 'k');

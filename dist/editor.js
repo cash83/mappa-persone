@@ -1,10 +1,10 @@
 import {
   MAPPA_AGGANCIO, MAPPA_DIM, MAPPA_OPACITA, MAPPA_ORE, MAPPA_SFONDI, MAPPA_SFONDO,
   MAPPA_MUCCHIO_OPACITA, MAPPA_SFONDO_CART, MAPPA_SUE, MAPPA_VERSIONE, MAPPA_ZOOM,
-} from './costanti.js?v=3.1.4';
-import { mappaRighe, mappaSua } from './utili.js?v=3.1.4';
-import { caricaFoto, togliFoto } from './foto.js?v=3.1.4';
-import { parla } from './lingue.js?v=3.1.4';
+} from './costanti.js?v=3.2.0';
+import { mappaRighe, mappaSua } from './utili.js?v=3.2.0';
+import { caricaFoto, togliFoto } from './foto.js?v=3.2.0';
+import { parla } from './lingue.js?v=3.2.0';
 
 /**
  * La finestra delle impostazioni.
@@ -43,10 +43,10 @@ const SCHEMA_ZONA = [
 ];
 
 /**
- * LA VIA E I VIAGGI: le quattordici voci che stanno DENTRO ogni persona. Ognuno
+ * LA VIA E I VIAGGI: le diciotto voci che stanno DENTRO ogni persona. Ognuno
  * ha il suo telefono e il suo modo di mandare le posizioni, quindi ognuno le
  * sue. Si salva solo quello che si cambia davvero: chi non tocca niente non si
- * porta dietro quattordici numeri copiati.
+ * porta dietro diciotto numeri copiati.
  */
 const schemaSue = (D) => [
   { name: 'via', selector: { boolean: {} } },
@@ -373,7 +373,7 @@ export class MappaPersoneEditor extends HTMLElement {
     dentro.appendChild(f);
 
     if (!zona) {
-      // le sue quattordici voci: chiuse, di solito non si aprono
+      // le sue diciotto voci: chiuse, di solito non si aprono
       const sue = document.createElement('ha-expansion-panel');
       sue.outlined = true;
       sue.header = D.boxVia;
@@ -522,7 +522,7 @@ export class MappaPersoneEditor extends HTMLElement {
 
   /**
    * Scrive nella persona SOLO le voci diverse da quelle di partenza: chi non
-   * tocca niente non si porta dietro quattordici numeri copiati.
+   * tocca niente non si porta dietro diciotto numeri copiati.
    */
   _cambiaSue(i, valori) {
     const ent = mappaRighe(this._config);

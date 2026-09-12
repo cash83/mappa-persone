@@ -80,9 +80,6 @@ let daScrivere = 0;
 function apri() {
   if (dispensa) return dispensa;
   try {
-    // le due dispense sbagliate di ieri sera: si buttano, occupavano e basta
-    localStorage.removeItem('mappa-persone:vie');
-    localStorage.removeItem('mappa-persone:vie2');
     dispensa = JSON.parse(localStorage.getItem(DISPENSA) || '{}');
   } catch (e) {
     dispensa = {};
@@ -500,7 +497,34 @@ async function aggancia(punti, profilo) {
  * Il `radius: 30` conta e resta: senza, lo stesso tratto veniva tre volte piu'
  * lungo del vero, perche' il calcolatore partiva dalla strada sbagliata.
  */
-async function rotte(punti, profilo) {
+/**
+ * GLI STESSI BUCHI, MA CHIESTI A OSRM. Chi sceglie OSRM lo sceglie per non
+ * mandare niente a Valhalla, e invece i buchi finivano la' lo stesso: la traccia
+ * andava a OSRM e i percorsi a Valhalla, sempre. Adesso no.
+ * OSRM da' una geometria sola per tutto il percorso, non una per tratta, quindi
+ * qui le tratte si chiedono una per una: meno efficiente, ma e' quello che serve
+ * per poterle poi accettare o scartare una per una.
+ */
+async function rotteOsrm(punti) {
+  const fuori = [];
+  for (let i = 1; i < punti.length; i++) {
+    const a = punti[i - 1];
+    const b = punti[i];
+    const dove = a[1].toFixed(6) + ',' + a[0].toFixed(6) + ';' + b[1].toFixed(6) + ',' + b[0].toFixed(6);
+    try {
+      const r = await chiedi(OSRM + '/route/v1/driving/' + dove + '?overview=full&geometries=geojson');
+      const j = await r.json();
+      const g = j.routes && j.routes[0] && j.routes[0].geometry && j.routes[0].geometry.coordinates;
+      fuori.push(g && g.length > 1 ? g.map((c) => [c[1], c[0]]) : null);
+    } catch (e) {
+      fuori.push(null);
+    }
+  }
+  return fuori;
+}
+
+async function rotte(punti, profilo, motore) {
+  if (motore === 'osrm') return rotteOsrm(punti);
   /*
    * IL FILTRO SULLE STRADINE. Una lettura presa male cade spesso a una ventina
    * di metri dalla strada, e li' dietro c'e' quasi sempre una corsia di
@@ -709,7 +733,7 @@ async function pezzoDaBlocco(blocco, o) {
     for (let n = 0; n < mucchio.quanti; n++) tappe.push(fare[mucchio.da + n].b);
     let g = null;
     try {
-      g = await rotte(tappe, profilo);
+      g = await rotte(tappe, profilo, o.motore);
     } catch (e) {
       g = null;
     }
@@ -724,7 +748,7 @@ async function pezzoDaBlocco(blocco, o) {
       for (let n = 0; n < mucchio.quanti; n++) {
         const b = fare[mucchio.da + n];
         try {
-          const uno = await rotte([b.a, b.b], profilo);
+          const uno = await rotte([b.a, b.b], profilo, o.motore);
           b.via = uno ? uno[0] : null;
         } catch (e2) {
           b.via = null;
@@ -756,7 +780,7 @@ async function pezzoDaBlocco(blocco, o) {
     const quanto = mappaDistanza(uno.a, due.b);
     let g = null;
     try {
-      g = await rotte([uno.a, due.b], profilo);
+      g = await rotte([uno.a, due.b], profilo, o.motore);
     } catch (e) {
       g = null;
     }

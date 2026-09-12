@@ -202,6 +202,9 @@ Il cerchio della zona usa sempre il **raggio vero** impostato in Home Assistant.
 * Le piastrelle della mappa arrivano da Esri, quindi quelle che guardi vengono
   chieste a loro. Il fondo di serie NON usa i server di volontari di OpenStreetMap: quelli chiedono che chi
   li interroga si faccia riconoscere, e dal browser una scheda non puo'.
+* Il tasto **Maps** dentro il cartellino di una persona apre una mappina di Google, e per
+  farlo manda a Google la **posizione di quella persona in quel momento**. Finche' non lo
+  tocchi non esce niente.
 * L'aggancio alle strade, quando è acceso, manda le **coordinate della scia** ai server
   pubblici [Valhalla](https://valhalla1.openstreetmap.de) o
   [OSRM](https://router.project-osrm.org). Con `aggancio: no` non esce niente dalla tua rete e

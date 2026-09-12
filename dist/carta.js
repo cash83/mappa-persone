@@ -1,4 +1,4 @@
-import { MAPPA_BASE, MAPPA_SFONDI, MAPPA_SFONDO, MAPPA_ZOOM } from './costanti.js?v=3.1.4';
+import { MAPPA_BASE, MAPPA_SFONDI, MAPPA_SFONDO, MAPPA_ZOOM } from './costanti.js?v=3.2.0';
 
 /**
  * LA GESTIONE DELLA MAPPA. Qui dentro sta tutto e solo quello che riguarda la
@@ -52,8 +52,9 @@ export class Carta {
    * @param suCentra cosa fare quando si tocca il mirino (torna sulle entita')
    * @param sfondo quale sfondo mostrare all'apertura
    */
-  constructor(L, dentro, suCentra, sfondo, alloZoom, chiave) {
+  constructor(L, dentro, suCentra, sfondo, alloZoom, chiave, D) {
     this.L = L;
+    this.D = D || {};
     this.dentro = dentro;
     this.liv = {};            // livelli riusati per chiave
     this.mosso = false;       // l'utente l'ha spostata: da qui non si inquadra piu'
@@ -162,20 +163,28 @@ export class Carta {
   _sfondi(scelto) {
     const scelte = {};
     this.strati = {};
+    /* Il tasto in alto a destra scriveva i nomi in italiano anche in inglese:
+       le traduzioni c'erano gia' ma le usava solo la finestra delle
+       impostazioni. Siccome l'etichetta e' anche quello che Leaflet rimanda
+       indietro quando uno la sceglie, si tiene una tabella etichetta -> chiave:
+       tradurre senza quella avrebbe rotto il riconoscimento. */
+    const daEtichetta = {};
     MAPPA_SFONDI.forEach((s) => {
       const fondo = this.L.tileLayer(s.url, s.opzioni);
       // certi sfondi hanno le scritte in un secondo strato da mettere sopra
       const strato = s.sopra
         ? this.L.layerGroup([fondo, this.L.tileLayer(s.sopra, s.opzioni)])
         : fondo;
-      scelte[s.nome] = strato;
+      const etichetta = (this.D.sfondi && this.D.sfondi[s.chiave]) || s.nome;
+      scelte[etichetta] = strato;
+      daEtichetta[etichetta] = s.chiave;
       this.strati[s.chiave] = strato;
     });
     this.L.control.layers(scelte, null, { position: 'topright' }).addTo(this.mappa);
     // scegliendolo col tasto, quello che comanda e' l'ultimo tocco dell'utente
     this.mappa.on('baselayerchange', (ev) => {
-      const c = MAPPA_SFONDI.find((s) => s.nome === ev.name);
-      if (c) this._sfondoOra = c.chiave;
+      const c = daEtichetta[ev.name];
+      if (c) this._sfondoOra = c;
     });
     this.sfondo(scelto);
   }
@@ -206,7 +215,7 @@ export class Carta {
         const box = L.DomUtil.create('div', 'leaflet-bar mappa-mirino');
         const a = L.DomUtil.create('a', '', box);
         a.href = '#';
-        a.title = 'Torna sulle entita';
+        a.title = this.D.mirino || 'Torna sulle entita';
         a.setAttribute('role', 'button');
         L.DomEvent.on(a, 'click', (ev) => {
           L.DomEvent.stop(ev);   // se no la pagina salta in cima per via dell'href

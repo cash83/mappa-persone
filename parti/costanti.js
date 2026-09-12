@@ -3,19 +3,17 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.1.4';
+export const MAPPA_VERSIONE = '3.2.0';
 
 /** dove sono i file sul box: serve per caricare Leaflet da noi, non da internet */
 export const MAPPA_BASE = '/local/community/mappa-persone/';
-
-/** un colore per ognuno, nell'ordine in cui sono stati messi nella scheda */
 
 export const MAPPA_DIM = 40;        // quanto grande l'icona di una persona, in pixel
 export const MAPPA_OPACITA = 100;   // quanto si vede: 100 pieno, 20 quasi trasparente
 export const MAPPA_AGGANCIO = 'no';   // 'no', 'valhalla' o 'osrm'
 
 /**
- * LA VIA E I VIAGGI: le quattordici voci che stanno dentro ogni persona, coi
+ * LA VIA E I VIAGGI: le diciotto voci che stanno dentro ogni persona, coi
  * valori messi a punto sul campo. Ognuno ha il suo telefono e il suo modo di
  * mandare le posizioni, quindi ognuno le sue.
  */
@@ -146,11 +144,6 @@ export const MAPPA_SFONDI = [
   },
 ];
 
-/**
- * L'icona del tasto degli sfondi. Leaflet la sua se la prende da un'immagine
- * (layers.png) con un indirizzo relativo che dentro lo shadow DOM non si
- * risolve: viene fuori un tasto vuoto. Quindi si disegna con una maschera CSS.
- */
 /** il mirino del tasto "torna sulle entita", lo stesso che usa Home Assistant */
 export const MAPPA_ICONA_CENTRA =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E"
@@ -158,6 +151,11 @@ export const MAPPA_ICONA_CENTRA =
   + "c0-1.1-.9-2-2-2m0 16h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4M12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 "
   + "3-3-1.34-3-3-3Z'/%3E%3C/svg%3E\")";
 
+/**
+ * L'icona del tasto degli sfondi. Leaflet la sua se la prende da un'immagine
+ * (layers.png) con un indirizzo relativo che dentro lo shadow DOM non si
+ * risolve: viene fuori un tasto vuoto. Quindi si disegna con una maschera CSS.
+ */
 export const MAPPA_ICONA_STRATI =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E"
   + "%3Cpath d='M12 16L19.36 10.27L21 9L12 2L3 9L4.63 10.27M12 18.54L4.62 12.81L3 14.07"

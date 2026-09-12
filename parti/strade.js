@@ -798,7 +798,8 @@ async function pezzoDaBlocco(blocco, o) {
 
 /**
  * Le vie di questa persona: un elenco di pezzi, uno per viaggio.
- * `o` sono le sue impostazioni: { motore, profilo, salto, giro, fermo, pausa }.
+ * `o` sono le sue impostazioni:
+ * { chi, motore, profilo, salto, giro, fermo, pausa, sostaLinea }.
  *
  * I viaggi si fanno uno per volta (vedi INSIEME), e appena uno e' pronto si
  * chiama `quandoPronto` con quello che c'e' finora: cosi' la mappa si riempie
@@ -807,8 +808,27 @@ async function pezzoDaBlocco(blocco, o) {
 export async function agganciaStrade(punti, o, quandoPronto) {
   if (!punti || punti.length < 2) return null;
   if (o.motore !== 'valhalla' && o.motore !== 'osrm') return null;
+  /*
+   * LA CHIAVE DELLA MEMORIA DI PAGINA. Ci vanno DUE cose che prima mancavano, e
+   * mancavano tutte e due per lo stesso motivo: si era guardato solo a cosa
+   * serve per CALCOLARE una scia, non a cosa la fa venire DIVERSA.
+   *
+   * 1. `chi`. La chiave era fatta solo di impostazioni, numero di letture e i
+   *    due capi: niente diceva DI CHI fosse quella scia. Due persone con le
+   *    stesse impostazioni che partono e arrivano nello stesso posto - due che
+   *    vivono in casa insieme - potevano cascare sulla stessa chiave e ritrovarsi
+   *    la scia dell'altro.
+   * 2. `sostaLinea`. Non cambia il calcolo di un viaggio, e infatti in dispensa
+   *    non serve, ma decide come si disegnano le SOSTE, e qui dentro ci sta il
+   *    risultato intero, soste comprese. Senza, si muoveva il cursore "Linea
+   *    dentro le soste" e non cambiava niente: la chiave restava identica e
+   *    tornava indietro il disegno di prima. Poi arrivava una posizione nuova,
+   *    il numero di letture cambiava, la chiave cambiava e la modifica compariva
+   *    da sola dopo minuti - su una persona si', sull'altra non ancora.
+   */
   const chiave = [
-    o.motore, o.profilo, o.salto, o.giro, o.fermo, o.pausa, punti.length,
+    o.chi || '?', o.motore, o.profilo, o.salto, o.giro, o.fermo, o.pausa,
+    o.sostaLinea, punti.length,
     punti[0][0].toFixed(5), punti[0][1].toFixed(5),
     punti[punti.length - 1][0].toFixed(5), punti[punti.length - 1][1].toFixed(5),
   ].join(':');

@@ -1,11 +1,11 @@
 import {
   MAPPA_AGGANCIO, MAPPA_ORE, MAPPA_RILEGGI, MAPPA_SFONDO, MAPPA_SUE, MAPPA_ZOOM,
-} from './costanti.js?v=3.1.2';
-import { MAPPA_STILE } from './stile.js?v=3.1.2';
-import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.1.2';
-import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.1.2';
-import { agganciaStrade } from './strade.js?v=3.1.2';
-import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.1.2';
+} from './costanti.js?v=3.1.3';
+import { MAPPA_STILE } from './stile.js?v=3.1.3';
+import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.1.3';
+import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.1.3';
+import { agganciaStrade } from './strade.js?v=3.1.3';
+import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.1.3';
 
 /**
  * LA SCHEDA. Tiene insieme i due pezzi e parla con Home Assistant: riceve la
@@ -258,6 +258,7 @@ export class MappaPersone extends HTMLElement {
       }
       // ogni viaggio compare appena e' pronto, senza aspettare gli altri
       const geo = await agganciaStrade(this._storia[ent], {
+        chi: ent,
         motore: motore,
         profilo: mappaSua(riga, 'profilo', MAPPA_SUE),
         salto: Number(mappaSua(riga, 'via_salto', MAPPA_SUE)),

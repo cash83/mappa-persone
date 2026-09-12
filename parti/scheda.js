@@ -258,6 +258,7 @@ export class MappaPersone extends HTMLElement {
       }
       // ogni viaggio compare appena e' pronto, senza aspettare gli altri
       const geo = await agganciaStrade(this._storia[ent], {
+        chi: ent,
         motore: motore,
         profilo: mappaSua(riga, 'profilo', MAPPA_SUE),
         salto: Number(mappaSua(riga, 'via_salto', MAPPA_SUE)),

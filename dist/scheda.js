@@ -1,11 +1,11 @@
 import {
   MAPPA_AGGANCIO, MAPPA_ORE, MAPPA_RILEGGI, MAPPA_SFONDO, MAPPA_SUE, MAPPA_ZOOM,
-} from './costanti.js?v=3.1.3';
-import { MAPPA_STILE } from './stile.js?v=3.1.3';
-import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.1.3';
-import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.1.3';
-import { agganciaStrade } from './strade.js?v=3.1.3';
-import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.1.3';
+} from './costanti.js?v=3.1.4';
+import { MAPPA_STILE } from './stile.js?v=3.1.4';
+import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.1.4';
+import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.1.4';
+import { agganciaStrade } from './strade.js?v=3.1.4';
+import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.1.4';
 
 /**
  * LA SCHEDA. Tiene insieme i due pezzi e parla con Home Assistant: riceve la
@@ -42,6 +42,22 @@ function inAnteprima(chi) {
  * SUBITO, senza aspettare che qualcuno ricarichi la pagina. Prima si cambiava
  * un numero e non succedeva niente, e sembrava che il cursore fosse rotto.
  */
+/**
+ * Da DOVE arrivano le posizioni, in una riga sola. Serve a capire quando lo
+ * storico che si ha in mano non vale piu' e va richiesto daccapo: cambia se
+ * cambia l'elenco delle entita', le ore, oppure se a qualcuno si accende o si
+ * spegne "usa anche il sensore dell'indirizzo", che aggiunge o toglie una fonte.
+ *
+ * Quell'ultimo prima non era guardato da nessuno: si muoveva l'interruttore e
+ * non succedeva niente finche' non scattava la rilettura automatica, cinque
+ * minuti dopo. Da fuori sembrava un interruttore rotto.
+ */
+function firmaFonti(config) {
+  return [Number(config.ore) || 0].concat(
+    mappaRighe(config).map((r) => r.entity + '=' + (mappaSua(r, 'usa_indirizzo', MAPPA_SUE) ? 1 : 0)),
+  ).join(',');
+}
+
 function firmaVie(config) {
   const f = {};
   mappaRighe(config).forEach((r) => {
@@ -73,12 +89,11 @@ export class MappaPersone extends HTMLElement {
     const prima = this._config;
     this._config = Object.assign({ entities: [], ore: MAPPA_ORE, sfondo: MAPPA_SFONDO, ingrandimento: MAPPA_ZOOM, aggancio: MAPPA_AGGANCIO }, config || {});
     // se cambiano le entita' o le ore, lo storico che si ha in mano non vale piu'
-    const diverso =
-      !prima ||
-      prima.ore !== this._config.ore ||
-      prima.aggancio !== this._config.aggancio ||
-      mappaElenco(prima).join(',') !== mappaElenco(this._config).join(',');
-    let rifare = false;
+    const diverso = !prima || firmaFonti(prima) !== firmaFonti(this._config);
+    /* L'aggancio NON butta lo storico: le posizioni sono le stesse, cambia solo
+       se e a chi si chiede la strada. Prima lo buttava, e spegnere e riaccendere
+       il motore si portava dietro una rilettura intera dello storico per niente. */
+    let rifare = !!prima && prima.aggancio !== this._config.aggancio;
     if (diverso) {
       this._storia = {};
       this._strade = {};

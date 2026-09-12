@@ -281,8 +281,17 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
          invece di essere uniti da una linea che nessuno ha percorso. Senza
          aggancio il pezzo e' uno solo, la linea che unisce i punti registrati. */
       const agganciata = (strade && strade[ent]) || null;
+      /* LA RAGNATELA DELL'ATTESA. Con le strade accese, la linea che unisce le
+         posizioni cosi' come arrivano e' SEMPRE sbagliata: non sa niente delle
+         soste e unisce in fila anche le centinaia di letture di chi e' fermo in
+         cortile. Prima la si disegnava finche' il calcolatore non aveva
+         risposto, cioe' per qualche secondo a ogni apertura e a ogni cursore
+         mosso. Adesso, con le strade accese, finche' non c'e' niente di pronto
+         restano solo i pallini, che sono le posizioni vere. La fila si disegna
+         solo per chi le strade le ha spente. */
+      const conStrade = (config.aggancio === 'valhalla' || config.aggancio === 'osrm') && !!sua('via');
       const pezzi = agganciata
-        || [{ p: passato.map((p) => [p[0], p[1]]).concat([[lat, lon]]) }];
+        || (conStrade ? [] : [{ p: passato.map((p) => [p[0], p[1]]).concat([[lat, lon]]) }]);
       /* Lo scostamento e' in PIXEL, per restare visibile a ogni ingrandimento.
          Il guaio e' che da lontano un pixel vale tanti metri: a venti pixel, su
          una veduta di paese, la scia finiva cento metri fuori dalla strada e

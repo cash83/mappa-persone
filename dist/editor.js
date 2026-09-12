@@ -1,10 +1,10 @@
 import {
   MAPPA_AGGANCIO, MAPPA_DIM, MAPPA_OPACITA, MAPPA_ORE, MAPPA_SFONDI, MAPPA_SFONDO,
   MAPPA_MUCCHIO_OPACITA, MAPPA_SFONDO_CART, MAPPA_SUE, MAPPA_VERSIONE, MAPPA_ZOOM,
-} from './costanti.js?v=3.2.0';
-import { mappaRighe, mappaSua } from './utili.js?v=3.2.0';
-import { caricaFoto, togliFoto } from './foto.js?v=3.2.0';
-import { parla } from './lingue.js?v=3.2.0';
+} from './costanti.js?v=3.2.1';
+import { mappaRighe, mappaSua } from './utili.js?v=3.2.1';
+import { caricaFoto, togliFoto } from './foto.js?v=3.2.1';
+import { parla } from './lingue.js?v=3.2.1';
 
 /**
  * La finestra delle impostazioni.
@@ -60,7 +60,9 @@ const schemaSue = (D) => [
   { name: 'via_salto', selector: { number: { min: 50, max: 1000, step: 10, mode: 'slider' } } },
   { name: 'via_giro', selector: { number: { min: 110, max: 500, step: 10, mode: 'slider' } } },
   { name: 'usa_indirizzo', selector: { boolean: {} } },
-  { name: 'fermo_m', selector: { number: { min: 0, max: 500, step: 10, mode: 'slider' } } },
+  /* da 25, non da 0: sotto i venticinque metri `viaggi()` non scende comunque, e un
+     cursore che mostra 0 mentre la scheda usa 25 dice una bugia */
+  { name: 'fermo_m', selector: { number: { min: 25, max: 500, step: 5, mode: 'slider' } } },
   { name: 'pausa_min', selector: { number: { min: 2, max: 120, step: 1, mode: 'slider' } } },
   { name: 'andata_ritorno', selector: { boolean: {} } },
   { name: 'scosto', selector: { number: { min: 0, max: 50, step: 1, mode: 'slider' } } },

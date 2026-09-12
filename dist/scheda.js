@@ -1,12 +1,12 @@
 import {
   MAPPA_AGGANCIO, MAPPA_ORE, MAPPA_RILEGGI, MAPPA_SFONDO, MAPPA_SUE, MAPPA_ZOOM,
-} from './costanti.js?v=3.2.0';
-import { MAPPA_STILE } from './stile.js?v=3.2.0';
-import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.2.0';
-import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.2.0';
-import { agganciaStrade } from './strade.js?v=3.2.0';
-import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.2.0';
-import { parla } from './lingue.js?v=3.2.0';
+} from './costanti.js?v=3.2.1';
+import { MAPPA_STILE } from './stile.js?v=3.2.1';
+import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.2.1';
+import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.2.1';
+import { agganciaStrade } from './strade.js?v=3.2.1';
+import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.2.1';
+import { parla } from './lingue.js?v=3.2.1';
 
 /**
  * LA SCHEDA. Tiene insieme i due pezzi e parla con Home Assistant: riceve la
@@ -100,17 +100,36 @@ export class MappaPersone extends HTMLElement {
       this._strade = {};
       this._letta = 0;
     } else if (prima) {
-      // toccata una misura della via a UNA persona: si butta solo la sua scia
+      /* Toccata una misura della via a UNA persona: si rifa' solo la sua scia.
+         NON SI BUTTA quella di prima: resta a vista finche' la nuova non e'
+         pronta intera (vedi `_aggancia`). Prima si cancellava subito, e nei
+         secondi in cui il calcolatore pensava si vedevano tutte le posizioni
+         unite in fila, sosta compresa: la ragnatela, a ogni cursore mosso. */
       const p = firmaVie(prima);
       const o = firmaVie(this._config);
       Object.keys(o).forEach((e) => {
-        if (o[e] === p[e]) return;
-        delete this._strade[e];
-        rifare = true;
+        if (o[e] !== p[e]) rifare = true;
       });
     }
-    if (!this.shadowRoot.firstChild) this._nasci();
-    else {
+    /*
+     * LA MAPPA NASCE UNA VOLTA SOLA. `_nasci` aspetta il foglio di stile e
+     * Leaflet prima di costruire la carta, e in quell'attesa la scheda e' ancora
+     * vuota. Nella finestra delle impostazioni Home Assistant richiama setConfig
+     * a OGNI scatto del cursore: prima ognuna di quelle chiamate trovava la
+     * scheda vuota e faceva partire un'altra `_nasci`. Misurato: sei scatti, sei
+     * mappe Leaflet intere per una scheda sola, sei letture dello storico, e
+     * vinceva quella che finiva per ULTIMA - non per forza quella dell'ultimo
+     * scatto. Da fuori: l'anteprima che non segue il cursore, e dopo il
+     * salvataggio la plancia che non si aggiorna finche' non si ricarica.
+     * Adesso chi arriva mentre la mappa sta nascendo non ne fa partire un'altra:
+     * `this._config` e' gia' aggiornata, e `_nasci` disegna con quella che
+     * trova ALLA FINE, cioe' la piu' recente.
+     */
+    if (!this.shadowRoot.firstChild) {
+      if (!this._nascendo) {
+        this._nascendo = this._nasci().finally(() => { this._nascendo = null; });
+      }
+    } else {
       this._dipingi();
       if (diverso) this._storico();
       else if (rifare) this._aggancia();
@@ -292,7 +311,12 @@ export class MappaPersone extends HTMLElement {
         }
         return;
       }
-      // ogni viaggio compare appena e' pronto, senza aspettare gli altri
+      /* Ogni viaggio compare appena e' pronto, senza aspettare gli altri - ma
+         SOLO la prima volta. Se una scia c'e' gia', la nuova si tiene nascosta
+         finche' non e' finita e poi si scambia in un colpo: se no a ogni cursore
+         mosso, e a ogni rilettura dei cinque minuti, la scia si accorciava e poi
+         ricresceva pezzo per pezzo. */
+      const cePrima = !!this._strade[ent];
       const geo = await agganciaStrade(this._storia[ent], {
         chi: ent,
         motore: motore,
@@ -303,6 +327,7 @@ export class MappaPersone extends HTMLElement {
         pausa: Number(mappaSua(riga, 'pausa_min', MAPPA_SUE)),
         sostaLinea: Number(mappaSua(riga, 'sosta_linea', MAPPA_SUE)),
       }, (finora) => {
+        if (cePrima) return;
         this._strade[ent] = finora;
         this._dipingi();
       });

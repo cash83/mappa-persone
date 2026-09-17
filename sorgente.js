@@ -1,46 +1,36 @@
 /**
- * mappa-persone - una mappa, e le entita' che ci metti dentro.
+ * mappa-persone - IL PORTONE.
  *
- * Questo file non fa niente: mette insieme i pezzi e li presenta a Home
- * Assistant. Il lavoro sta in `parti/`, un file per mestiere:
+ * Questo file non cambia mai, ed e' apposta. Home Assistant serve i file delle
+ * schede con un mese di validita' in cache (`Cache-Control: max-age=2678400`),
+ * e l'elenco delle risorse Lovelace lo rilegge solo quando riparte: percio'
+ * prima, per far arrivare una versione nuova al browser, bisognava cambiare il
+ * `?v=` della risorsa e riavviare Home Assistant. Ogni volta.
  *
- *   parti/costanti.js  i numeri e i nomi fissi (colori, ore, sfondi, icona)
- *   parti/utili.js     due conti che servono dappertutto
- *   parti/stile.js     il vestito della scheda
- *   parti/carta.js     LA MAPPA: Leaflet, sfondi, misura, inquadratura, livelli
- *   parti/entita.js    LE ENTITA': dove sono adesso, lo storico, il disegno
- *   parti/scheda.js    la scheda: tiene insieme i due e parla con Home Assistant
- *   parti/editor.js    la finestra delle impostazioni
+ * Adesso no. Il portone resta identico - puo' stare in cache quanto vuole - e
+ * a ogni apertura della pagina fa una cosa sola: chiede `versione.js` dicendo
+ * al browser di NON usare la cache, e con quel numero carica il resto. I pezzi
+ * restano in cache come prima, ma il giorno che la versione cambia il loro
+ * indirizzo cambia con lei e arrivano quelli nuovi, senza riavviare niente.
+ *
+ * Il lavoro vero sta in `avvio.js` e in `parti/`, un file per mestiere.
  */
 
-import { MAPPA_VERSIONE } from './parti/costanti.js';
-import { MappaPersone } from './parti/scheda.js';
-import { MappaPersoneEditor } from './parti/editor.js';
-import { parla } from './parti/lingue.js';
+const QUI = import.meta.url;
 
-customElements.define('mappa-persone', MappaPersone);
-customElements.define('mappa-persone-editor', MappaPersoneEditor);
+/** la versione che c'e' sul box ADESSO, non quella che il browser ricorda */
+async function versione() {
+  try {
+    const r = await fetch(new URL('versione.js', QUI), { cache: 'no-store' });
+    if (r.ok) {
+      const scritta = (await r.text()).match(/'([^']+)'/);
+      if (scritta) return scritta[1];
+    }
+  } catch (e) {
+    /* senza rete si va avanti lo stesso: si carica quello che c'e' in cache,
+       che e' meglio di una scheda che non compare */
+  }
+  return 'ultima';
+}
 
-window.customCards = window.customCards || [];
-/* Il nome nella scelta delle schede si decide QUI, prima che Home Assistant
-   parli: non c'e' ancora nessun `hass` da cui sapere la lingua. Si guarda la
-   lingua della pagina, che e' quella scelta dall'utente, e si ripiega sul
-   browser. */
-const LINGUA = parla({
-  language: (typeof document !== 'undefined' && document.documentElement.lang)
-    || (typeof navigator !== 'undefined' && navigator.language) || 'en',
-});
-
-window.customCards.push({
-  type: 'mappa-persone',
-  name: LINGUA.nomeCarta,
-  description: LINGUA.descrizioneCarta,
-  preview: true,
-  documentationURL: 'https://github.com/cash83/mappa-persone',
-});
-
-console.info(
-  '%c mappa-persone %c ' + MAPPA_VERSIONE + ' ',
-  'background:#2196f3;color:#fff;border-radius:3px 0 0 3px',
-  'background:#333;color:#fff;border-radius:0 3px 3px 0'
-);
+await import(new URL('avvio.js?v=' + encodeURIComponent(await versione()), QUI).href);

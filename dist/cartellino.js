@@ -1,5 +1,5 @@
-import { mappaDistanza, mappaSalta } from './utili.js?v=3.3.12';
-import { parla } from './lingue.js?v=3.3.12';
+import { mappaDistanza, mappaSalta } from './utili.js?v=3.3.14';
+import { parla } from './lingue.js?v=3.3.14';
 
 /**
  * IL CARTELLINO che si apre toccando una persona: foto, nome, dove sta e da

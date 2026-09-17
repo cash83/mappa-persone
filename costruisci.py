@@ -53,10 +53,23 @@ def main():
     os.makedirs(DIST)
 
     fatti = []
+    # IL PORTONE non porta dentro nessuna versione: e' l'unico file che il
+    # browser puo' tenere in cache per sempre. Vedi sorgente.js.
     principale = io.open(os.path.join(QUI, 'sorgente.js'), encoding='utf-8').read()
-    io.open(os.path.join(DIST, 'mappa-persone.js'), 'w', encoding='utf-8').write(
-        appiattisci(principale, v))
+    io.open(os.path.join(DIST, 'mappa-persone.js'), 'w', encoding='utf-8').write(principale)
     fatti.append('mappa-persone.js')
+
+    # quello che il portone carica, con dentro i pezzi versionati
+    avvio = io.open(os.path.join(QUI, 'avvio.js'), encoding='utf-8').read()
+    io.open(os.path.join(DIST, 'avvio.js'), 'w', encoding='utf-8').write(appiattisci(avvio, v))
+    fatti.append('avvio.js')
+
+    # il foglietto che il portone legge senza cache a ogni apertura della pagina.
+    # Si chiama .js perche' HACS scarica solo i .js che trova in dist/.
+    io.open(os.path.join(DIST, 'versione.js'), 'w', encoding='utf-8').write(
+        u"/* la versione viva della scheda: la legge il portone, vedi sorgente.js */\n"
+        u"export const MAPPA_V = '%s';\n" % v)
+    fatti.append('versione.js')
 
     for nome in sorted(os.listdir(os.path.join(QUI, 'parti'))):
         if not nome.endswith('.js'):

@@ -1,13 +1,13 @@
 import {
   MAPPA_DIM, MAPPA_MUCCHIO, MAPPA_MUCCHIO_OPACITA, MAPPA_OPACITA, MAPPA_PRINCIPALE,
   MAPPA_SFONDO_CART, MAPPA_SUE, MAPPA_VICINO, MAPPA_ZONA_SPENTA,
-} from './costanti.js?v=3.3.12';
+} from './costanti.js?v=3.3.14';
 import {
   mappaAffianca, mappaColore, mappaDistanza, mappaElenco, mappaOra, mappaRighe, mappaSalta,
   mappaSua,
-} from './utili.js?v=3.3.12';
-import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.12';
-import { parla } from './lingue.js?v=3.3.12';
+} from './utili.js?v=3.3.14';
+import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.14';
+import { parla } from './lingue.js?v=3.3.14';
 
 /**
  * LA GESTIONE DELLE ENTITA'. Qui dentro sta tutto e solo quello che riguarda

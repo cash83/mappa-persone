@@ -90,6 +90,8 @@ export class Carta {
     };
     piano('zone', 450, false);
     piano('scie', 455, true);
+    // le frecce sopra TUTTE le scie, se no la linea di chi e' disegnato dopo le copriva
+    piano('frecce', 458, false);
     piano('nomiZone', 465, false);
 
     /* La chiave della memoria e' una FUNZIONE, non un testo fisso: al momento in

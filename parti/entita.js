@@ -289,7 +289,7 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
          mosso. Adesso, con le strade accese, finche' non c'e' niente di pronto
          restano solo i pallini, che sono le posizioni vere. La fila si disegna
          solo per chi le strade le ha spente. */
-      const conStrade = (config.aggancio === 'valhalla' || config.aggancio === 'osrm') && !!sua('via');
+      const conStrade = (config.aggancio === 'valhalla' || config.aggancio === 'osrm' || config.aggancio === 'stadia') && !!sua('via');
       const pezzi = agganciata
         || (conStrade ? [] : [{ p: passato.map((p) => [p[0], p[1]]).concat([[lat, lon]]) }]);
       /* Lo scostamento e' in PIXEL, per restare visibile a ogni ingrandimento.
@@ -301,12 +301,31 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
          giusto: a quella scala la corsia non si vedrebbe comunque. */
       const SCOSTO_MAX = 24;   // metri fra le due corsie, al massimo
       let px = Number(sua('scosto')) || 0;
-      if (px > 0) {
-        const c0 = carta.mappa.getCenter();
-        const q0 = carta.mappa.latLngToLayerPoint(c0);
-        const q100 = carta.mappa.layerPointToLatLng(L.point(q0.x + 100, q0.y));
-        const metriPerPixel = carta.mappa.distance(c0, q100) / 100;
-        if (px * metriPerPixel > SCOSTO_MAX) px = SCOSTO_MAX / metriPerPixel;
+      const c0 = carta.mappa.getCenter();
+      const q0 = carta.mappa.latLngToLayerPoint(c0);
+      const q100 = carta.mappa.layerPointToLatLng(L.point(q0.x + 100, q0.y));
+      const metriPerPixel = carta.mappa.distance(c0, q100) / 100;
+      if (px > 0 && px * metriPerPixel > SCOSTO_MAX) px = SCOSTO_MAX / metriPerPixel;
+      /* PROVA - OGNI PERSONA LA SUA CORSIA. Quando due persone fanno la stessa
+         strada nello stesso verso le loro scie si disegnavano una sopra l'altra
+         e se ne vedeva una sola. Ogni persona ha un posto fisso nell'elenco
+         (0, 1, 2...) e la sua linea si sposta di tanti pixel in piu' verso la
+         destra del senso di marcia: le scie restano affiancate, nell'ordine in
+         cui sono le persone nella scheda. Anche qui c'e' un tetto in metri, cosi'
+         da lontano si riavvicinano. */
+      /* Il passo fra una corsia e l'altra e' lo spessore della linea piu' grossa
+         della scheda piu' due pixel: con 7 fissi, mamma (spessore 6) finiva sotto
+         le linee degli altri tre. Con piu' persone la corsia di ognuno sostituisce
+         lo scostamento suo: scostamenti diversi (8, 10, 20) mescolavano l'ordine. */
+      const persone = mappaRighe(config).filter((r) => !String(r.entity).startsWith('zone.'));
+      const passoCorsia = Math.max(...persone.map((r) => Number(mappaSua(r, 'spessore', MAPPA_SUE)) || 4)) + 2;
+      const PERSONA_MAX = 8;   // metri per ogni corsia, al massimo
+      const posto = Math.max(0, persone.map((r) => r.entity).indexOf(ent));
+      let extra = 0;
+      if (persone.length > 1) {
+        const passo = passoCorsia * metriPerPixel > PERSONA_MAX ? PERSONA_MAX / metriPerPixel : passoCorsia;
+        extra = passo / 2 + posto * passo;
+        px = 0;
       }
       const distingui = !!sua('andata_ritorno');
       const spessore = Number(sua('spessore')) || 4;
@@ -317,6 +336,9 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
          cominciava e finiva, e un giro che parte da una sosta - non da casa -
          diventava tutto "ritorno". */
       const tratte = [];
+      /* le linee come sono state DISEGNATE (gia' spostate di lato), con il loro
+         orario: servono ai pallini per sedersi sulla scia del loro viaggio */
+      const disegnate = [];
       pezzi.forEach((pezzo, n) => {
         /* Le SOSTE non si spezzano in andata e ritorno e non si chiamano cosi':
            uno fermo in un posto non sta ne' andando ne' tornando. Prima il
@@ -336,11 +358,15 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
         const ritorno = pezzo.ritorno;
         // affiancate come le corsie, ognuna alla destra del proprio senso di
         // marcia: cosi' si vedono tutte e due anche sulla stessa via
-        const linea = agganciata && px ? mappaAffianca(carta.mappa, pezzo.p, px / 2) : pezzo.p;
+        const linea = agganciata && (px || extra) ? mappaAffianca(carta.mappa, pezzo.p, px / 2 + extra) : pezzo.p;
+        if (agganciata && !pezzo.fermo) disegnate.push({ p: linea, da: pezzo.da, a: pezzo.a });
+        /* Tutte le scie uguali, andata e ritorno, per tutte le persone
+           (anche quelle nuove): colore pieno e un po' piu' sottili. L'andata chiara
+           e trasparente spariva sopra il satellite; il verso lo dicono le frecce. */
         const stile = {
-          color: distingui && !ritorno ? casaSchiarisci(col) : col,
-          weight: distingui && !ritorno ? Math.max(2, spessore * 0.7) : spessore,
-          opacity: distingui && !ritorno ? 0.6 : 0.9,
+          color: col,
+          weight: Math.max(2, spessore * 0.8),
+          opacity: 0.9,
           lineCap: 'round',
           lineJoin: 'round',
         };
@@ -406,7 +432,7 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
                 iconAnchor: [10, 10],
               });
               const fr = carta.usa(kf, () => L.marker(q, {
-                icon: fai(), pane: 'scie', interactive: false,
+                icon: fai(), pane: 'frecce', interactive: false,
               }));
               fr.setLatLng(q);
               if (fr.__segno !== segno) {
@@ -425,10 +451,21 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
          verita', la linea e' solo il collegamento. */
       if (sua('pallini')) {
         const passo = Number(sua('passo_pallini')) || 0;
+        const secondi = Number(sua('passo_pallini_sec')) || 0;
         const dim = Number(sua('pallini_dim')) || 5;
         const sfuma = !!sua('sfuma');
-        const mostrati = passo > 0 ? assottiglia(passato, passo) : passato;
+        /* prima il tempo (un pallino ogni tot secondi), poi i metri */
+        let mostrati = secondi > 0 ? diradaNelTempo(passato, secondi * 1000) : passato;
+        if (passo > 0) mostrati = assottiglia(mostrati, passo);
+        /* SULLA SCIA. Il GPS mette la lettura a dieci, venti metri dalla strada, e
+           accanto a una scia agganciata il pallino sembrava un altro percorso. Si
+           sposta sul punto piu' vicino della linea del SUO viaggio (quella il cui
+           orario lo contiene), solo se e' vicino: una lettura lontana resta dov'e',
+           perche' e' la verita' e la linea potrebbe essere sbagliata. */
+        const sullaScia = !!sua('pallini_sulla_scia') && disegnate.length > 0;
+        const posti = sullaScia ? inFilaSullaScia(carta.mappa, disegnate, mostrati) : null;
         mostrati.forEach((p, n) => {
+          const dove = posti ? posti[n] : [p[0], p[1]];
           const kp = 'p:' + ent + ':' + n;
           vivi.push(kp);
           const eta = sfuma ? 0.3 + (0.6 * n) / Math.max(1, mostrati.length - 1) : 0.9;
@@ -437,7 +474,7 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
              `bubblingMouseEvents: false` serve perche' il tocco non arrivi anche
              alla mappa, che chiuderebbe subito quello che si e' appena aperto. */
           const c = carta.usa(kp, () => {
-            const q = L.circleMarker([p[0], p[1]], {
+            const q = L.circleMarker(dove, {
               radius: dim / 2,
               weight: 0,
               fillColor: col,
@@ -448,7 +485,7 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
             q.on('click', () => q.openTooltip());
             return q;
           });
-          c.setLatLng([p[0], p[1]]);
+          c.setLatLng(dove);
           c.setStyle({ fillColor: col, fillOpacity: eta, radius: dim / 2 });
           /* Il nome sopra e l'ora sotto, come fa la scheda di serie. Con la sola
              ora, dove due persone si incrociano non si capiva di chi fosse il
@@ -757,6 +794,69 @@ function assottiglia(punti, metri) {
   }
   const u = punti[punti.length - 1];
   if (fuori[fuori.length - 1] !== u) fuori.push(u);
+  return fuori;
+}
+
+/** un pallino ogni tot millisecondi: con una lettura ogni dieci secondi la scia era un rosario */
+function diradaNelTempo(punti, ms) {
+  if (!punti.length) return punti;
+  const fuori = [punti[0]];
+  for (let i = 1; i < punti.length; i++) {
+    if ((punti[i][2] || 0) - (fuori[fuori.length - 1][2] || 0) >= ms) fuori.push(punti[i]);
+  }
+  const u = punti[punti.length - 1];
+  if (fuori[fuori.length - 1] !== u) fuori.push(u);
+  return fuori;
+}
+
+/*
+ * I pallini SULLA SCIA E IN FILA. Ogni lettura va sulla linea del viaggio che
+ * contiene la sua ora, e dentro quel viaggio sempre PIU' AVANTI della lettura
+ * precedente: se la strada ripassa vicino allo stesso posto (un giro
+ * dell'isolato, un'inversione), il pallino delle 07:53 non torna indietro sul
+ * tratto delle 07:51. Una lettura a piu' di SULLA_SCIA_MAX metri dalla linea
+ * resta dov'e' e non sposta la fila: e' la verita', e' la linea che sbaglia.
+ * Le letture che non cadono in nessun viaggio (soste, capi) restano dove sono.
+ */
+const SULLA_SCIA_MAX = 60;
+function inFilaSullaScia(mappa, linee, punti) {
+  const fuori = punti.map((p) => [p[0], p[1]]);
+  linee.forEach((l) => {
+    if (!l.da || !l.a || !l.p || l.p.length < 2) return;
+    const px = l.p.map((c) => mappa.latLngToLayerPoint(c));
+    // a che punto della linea si e' arrivati: segmento e frazione
+    let seg = 1;
+    let fraz = 0;
+    punti.forEach((p, n) => {
+      const t = p[2] || 0;
+      if (t < l.da || t > l.a) return;
+      const q = mappa.latLngToLayerPoint([p[0], p[1]]);
+      let meglio = null;
+      let dmin = Infinity;
+      for (let i = seg; i < px.length; i++) {
+        const a = px[i - 1];
+        const b = px[i];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const lung = dx * dx + dy * dy;
+        let k = lung > 0 ? ((q.x - a.x) * dx + (q.y - a.y) * dy) / lung : 0;
+        k = Math.max(i === seg ? fraz : 0, Math.min(1, k));
+        const x = a.x + dx * k;
+        const y = a.y + dy * k;
+        const d = (x - q.x) * (x - q.x) + (y - q.y) * (y - q.y);
+        if (d < dmin) {
+          dmin = d;
+          meglio = { x: x, y: y, i: i, k: k };
+        }
+      }
+      if (!meglio) return;
+      const ll = mappa.layerPointToLatLng([meglio.x, meglio.y]);   // L qui non c'e': basta la coppia
+      if (mappaDistanza([p[0], p[1]], [ll.lat, ll.lng]) > SULLA_SCIA_MAX) return;
+      fuori[n] = [ll.lat, ll.lng];
+      seg = meglio.i;
+      fraz = meglio.k;
+    });
+  });
   return fuori;
 }
 

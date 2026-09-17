@@ -1,4 +1,4 @@
-import { MAPPA_BASE, MAPPA_SFONDI, MAPPA_SFONDO, MAPPA_ZOOM } from './costanti.js?v=3.2.1';
+import { MAPPA_BASE, MAPPA_SFONDI, MAPPA_SFONDO, MAPPA_ZOOM } from './costanti.js?v=3.3.12';
 
 /**
  * LA GESTIONE DELLA MAPPA. Qui dentro sta tutto e solo quello che riguarda la
@@ -90,6 +90,8 @@ export class Carta {
     };
     piano('zone', 450, false);
     piano('scie', 455, true);
+    // le frecce sopra TUTTE le scie, se no la linea di chi e' disegnato dopo le copriva
+    piano('frecce', 458, false);
     piano('nomiZone', 465, false);
 
     /* La chiave della memoria e' una FUNZIONE, non un testo fisso: al momento in

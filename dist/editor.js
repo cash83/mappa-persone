@@ -1,10 +1,10 @@
 import {
   MAPPA_AGGANCIO, MAPPA_DIM, MAPPA_OPACITA, MAPPA_ORE, MAPPA_SFONDI, MAPPA_SFONDO,
   MAPPA_MUCCHIO_OPACITA, MAPPA_SFONDO_CART, MAPPA_SUE, MAPPA_VERSIONE, MAPPA_ZOOM,
-} from './costanti.js?v=3.2.1';
-import { mappaRighe, mappaSua } from './utili.js?v=3.2.1';
-import { caricaFoto, togliFoto } from './foto.js?v=3.2.1';
-import { parla } from './lingue.js?v=3.2.1';
+} from './costanti.js?v=3.3.12';
+import { mappaRighe, mappaSua } from './utili.js?v=3.3.12';
+import { caricaFoto, togliFoto } from './foto.js?v=3.3.12';
+import { parla } from './lingue.js?v=3.3.12';
 
 /**
  * La finestra delle impostazioni.
@@ -65,6 +65,7 @@ const schemaSue = (D) => [
   { name: 'fermo_m', selector: { number: { min: 25, max: 500, step: 5, mode: 'slider' } } },
   { name: 'pausa_min', selector: { number: { min: 2, max: 120, step: 1, mode: 'slider' } } },
   { name: 'andata_ritorno', selector: { boolean: {} } },
+  { name: 'scia_chiara', selector: { boolean: {} } },
   { name: 'scosto', selector: { number: { min: 0, max: 50, step: 1, mode: 'slider' } } },
   { name: 'spessore', selector: { number: { min: 1, max: 12, step: 1, mode: 'slider' } } },
   { name: 'alone', selector: { boolean: {} } },
@@ -73,6 +74,8 @@ const schemaSue = (D) => [
   { name: 'pallini', selector: { boolean: {} } },
   { name: 'pallini_dim', selector: { number: { min: 2, max: 14, step: 1, mode: 'slider' } } },
   { name: 'passo_pallini', selector: { number: { min: 0, max: 200, step: 5, mode: 'slider' } } },
+  { name: 'passo_pallini_sec', selector: { number: { min: 0, max: 300, step: 5, mode: 'slider' } } },
+  { name: 'pallini_sulla_scia', selector: { boolean: {} } },
   { name: 'sosta_linea', selector: { number: { min: 0, max: 300, step: 5, mode: 'slider' } } },
   { name: 'sfuma', selector: { boolean: {} } },
 ];
@@ -97,7 +100,9 @@ const schemaGenerale = (D) => [
     { value: 'no', label: D.aggancio.no },
     { value: 'valhalla', label: D.aggancio.valhalla },
     { value: 'osrm', label: D.aggancio.osrm },
+    { value: 'stadia', label: D.aggancio.stadia },
   ] } } },
+  { name: 'stadia_chiave', selector: { text: { type: 'password' } } },
 ];
 
 
@@ -269,6 +274,7 @@ export class MappaPersoneEditor extends HTMLElement {
         gruppo_opacita: v.gruppo_opacita === undefined || v.gruppo_opacita === null
           || v.gruppo_opacita === '' ? MAPPA_MUCCHIO_OPACITA : Number(v.gruppo_opacita),
         aggancio: v.aggancio || MAPPA_AGGANCIO,
+        stadia_chiave: v.stadia_chiave || '',
         ore: v.ore === undefined || v.ore === null || v.ore === '' ? MAPPA_ORE : v.ore,
       }));
     });
@@ -612,6 +618,7 @@ export class MappaPersoneEditor extends HTMLElement {
           || this._config.gruppo_opacita === null || this._config.gruppo_opacita === ''
           ? MAPPA_MUCCHIO_OPACITA : Number(this._config.gruppo_opacita),
         aggancio: this._config.aggancio || MAPPA_AGGANCIO,
+        stadia_chiave: this._config.stadia_chiave || '',
         ore: ore === undefined || ore === null || ore === '' ? MAPPA_ORE : ore,
       };
       if (JSON.stringify(dati) !== JSON.stringify(this._generale.data)) this._generale.data = dati;

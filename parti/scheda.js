@@ -94,7 +94,8 @@ export class MappaPersone extends HTMLElement {
     /* L'aggancio NON butta lo storico: le posizioni sono le stesse, cambia solo
        se e a chi si chiede la strada. Prima lo buttava, e spegnere e riaccendere
        il motore si portava dietro una rilettura intera dello storico per niente. */
-    let rifare = !!prima && prima.aggancio !== this._config.aggancio;
+    let rifare = !!prima && (prima.aggancio !== this._config.aggancio
+      || prima.stadia_chiave !== this._config.stadia_chiave);
     if (diverso) {
       this._storia = {};
       this._strade = {};
@@ -288,7 +289,7 @@ export class MappaPersone extends HTMLElement {
    */
   async _aggancia() {
     const motore = this._config && this._config.aggancio;
-    if (motore !== 'valhalla' && motore !== 'osrm') {
+    if (motore !== 'valhalla' && motore !== 'osrm' && motore !== 'stadia') {
       if (Object.keys(this._strade).length) {
         this._strade = {};
         this._dipingi();
@@ -320,6 +321,7 @@ export class MappaPersone extends HTMLElement {
       const geo = await agganciaStrade(this._storia[ent], {
         chi: ent,
         motore: motore,
+        chiave: this._config.stadia_chiave || '',
         profilo: mappaSua(riga, 'profilo', MAPPA_SUE),
         salto: Number(mappaSua(riga, 'via_salto', MAPPA_SUE)),
         giro: Number(mappaSua(riga, 'via_giro', MAPPA_SUE)),

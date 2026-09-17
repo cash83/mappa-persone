@@ -3,7 +3,13 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.2.1';
+export const MAPPA_VERSIONE = '3.3.12';
+
+/* La versione del CALCOLO delle vie: entra nella chiave dei viaggi in dispensa.
+   Si alza SOLO quando cambia il modo di ricavare la via (pulizia delle letture,
+   viaggi, richieste): cosi' un aggiornamento che tocca solo il disegno non butta
+   via tre giorni di scie gia' calcolate. */
+export const MAPPA_CALCOLO = '3.3.12';
 
 /** dove sono i file sul box: serve per caricare Leaflet da noi, non da internet */
 export const MAPPA_BASE = '/local/community/mappa-persone/';
@@ -40,6 +46,7 @@ export const MAPPA_SUE = {
   fermo_m: 100,              // m: sotto questo spostamento non e' un viaggio
   pausa_min: 5,              // min: sosta che chiude un viaggio
   andata_ritorno: true,      // distingui andata e ritorno
+  scia_chiara: false,        // senza distinzione: tutte le scie sottili e chiare come l'andata
   scosto: 8,                 // px: distanza fra le due
   spessore: 4,               // px: la linea
   alone: true,               // l'alone della precisione dichiarata dal telefono
@@ -48,6 +55,8 @@ export const MAPPA_SUE = {
   pallini: true,             // segna le posizioni registrate
   pallini_dim: 9,            // px
   passo_pallini: 0,          // m: 0 = tutti
+  passo_pallini_sec: 0,      // s: un pallino ogni tot secondi. 0 = tutti
+  pallini_sulla_scia: true,  // sposta il pallino sulla scia del suo viaggio (se vicino)
   sosta_linea: 0,            // m: la linea dentro le soste. 0 = niente linea
   sfuma: true,               // sbiadisci il piu' vecchio
 };

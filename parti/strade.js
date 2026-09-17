@@ -1,5 +1,5 @@
 import { mappaDistanza } from './utili.js';
-import { MAPPA_VERSIONE } from './costanti.js';
+import { MAPPA_CALCOLO } from './costanti.js';
 
 /**
  * LA VIA SOTTO LA SCIA. E' lo schema che funzionava, rimesso com'era:
@@ -27,6 +27,15 @@ const GIORNI = 3;                // per quanti giorni
 const POSTO = 3000000;           // e in quanto spazio (caratteri, circa 3 MB)
 const VALHALLA = 'https://valhalla1.openstreetmap.de';
 const OSRM = 'https://router.project-osrm.org';
+const STADIA = 'https://api.stadiamaps.com';
+const IN_USO = { motore: 'valhalla', chiave: '' };
+function indirizzo(servizio) {
+  if (IN_USO.motore === 'stadia') {
+    const nome = servizio === 'trace_route' ? 'map_match' : servizio;
+    return STADIA + '/' + nome + '/v1?api_key=' + encodeURIComponent(IN_USO.chiave);
+  }
+  return VALHALLA + '/' + servizio;
+}
 const PEZZO = 100;               // punti per richiesta di aggancio
 const TAPPE = 10;                /* quante tappe accetta il server pubblico in una
                                     richiesta sola: dieci, cioe' NOVE tratte in un
@@ -146,15 +155,34 @@ function ricorda(chiave, pezzo) {
  * fila, quattro decimi di secondo l'una dall'altra, e se una viene rifiutata si
  * riprova una volta dopo un secondo.
  */
+/* IL RIFIUTO SI ASPETTA, NON SI SUBISCE. Il 15/09 il calcolatore pubblico
+   rispondeva in cinque secondi e alla terza richiesta di fila diceva 429. Con un
+   solo nuovo tentativo dopo un secondo il rifiuto diventava "guasto", e un
+   viaggio con un guasto NON va in dispensa: il ritorno di papa' si ricalcolava a
+   ogni apertura, lento, mentre l'andata compariva subito. Provato a mano: tutte
+   le 23 tratte di quel ritorno il calcolatore le risolve, se si ha pazienza.
+   Adesso dopo un rifiuto tutta la fila si ferma e si riprova fino a quattro
+   volte, aspettando sempre di piu' (o quanto dice il server). Il percorso che
+   ne esce e' identico: cambia solo che arriva, e quindi si conserva. */
 async function chiedi(url, opzioni) {
-  for (let prova = 0; prova < 2; prova++) {
+  let attesa = 1500;
+  for (let prova = 0; prova < 5; prova++) {
     const passa = Date.now() - CODA.quando;
     if (passa < RESPIRO) await new Promise((r) => setTimeout(r, RESPIRO - passa));
     CODA.quando = Date.now();
-    const r = await fetch(url, opzioni);
-    if (r.ok) return r;
-    if (r.status !== 429 && r.status < 500) throw new Error(url.split('/')[2] + ' ha risposto ' + r.status);
-    await new Promise((r2) => setTimeout(r2, 1000));
+    let r = null;
+    try {
+      r = await fetch(url, opzioni);
+    } catch (e) {
+      r = null;   // rete saltata: si riprova come un rifiuto
+    }
+    if (r && r.ok) return r;
+    if (r && r.status !== 429 && r.status < 500) throw new Error(url.split('/')[2] + ' ha risposto ' + r.status);
+    const dice = r ? Number(r.headers.get('Retry-After')) : 0;
+    const quanto = dice > 0 ? Math.min(dice * 1000, 15000) : attesa;
+    CODA.quando = Date.now() + quanto;   // tutta la fila si mette in pausa
+    await new Promise((r2) => setTimeout(r2, quanto));
+    attesa = Math.min(attesa * 2, 12000);
   }
   throw new Error(url.split('/')[2] + ' non risponde');
 }
@@ -204,7 +232,30 @@ function decomprimi(testo) {
  * il telefono ha tardato a mandare la posizione: e' sempre lo stesso viaggio, e
  * quel buco lo riempie la via.
  */
+/* IL SILENZIO LUNGO. Oltre questo buco senza nessuna lettura non si unisce piu'
+   niente: non e' un telefono che tarda, e' un dispositivo spento. "seat" (il
+   telefono in auto) si accende solo col motore: il 15/09 era vicino a scuola la
+   mattina, a casa alle 15:04-15:08 e a Bolzano alle 16:01, e la scheda faceva un
+   solo "Andata dalle 06:42 alle 16:01" disegnando strade mai percorse. */
+const SILENZIO_MAX = 30 * 60000;
+
 function viaggi(punti, fermoM, pausaMin) {
+  if (punti.length < 2) return [];
+  const tronconi = [];
+  let t0 = 0;
+  for (let k = 1; k <= punti.length; k++) {
+    if (k === punti.length || (punti[k][2] || 0) - (punti[k - 1][2] || 0) > SILENZIO_MAX) {
+      tronconi.push(punti.slice(t0, k));
+      t0 = k;
+    }
+  }
+  if (tronconi.length > 1) {
+    return tronconi.reduce((tutti, t) => tutti.concat(viaggiContinui(t, fermoM, pausaMin)), []);
+  }
+  return viaggiContinui(punti, fermoM, pausaMin);
+}
+
+function viaggiContinui(punti, fermoM, pausaMin) {
   if (punti.length < 2) return [];
   const pausa = Math.max(1, pausaMin) * 60000;
   /* Il minimo era sessanta, e voleva dire che scrivendo cinquanta ne valevano
@@ -402,7 +453,23 @@ function gemelle(punti) {
       i += 1;
       continue;
     }
-    fuori.push(mappaDistanza(q, dopo) < mappaDistanza(p, dopo) ? q : p);
+    /* DUE LETTURE BUONE NELLO STESSO SECONDO NON SONO UNA SBAGLIATA: e' il
+       telefono che consegna insieme la posizione vecchia e quella nuova, in
+       ordine sparso. Buttarne una perdeva proprio il pezzo che conta: il 15/09
+       seat arriva in cima allo svincolo del ponte (lettura buona, 3 m) e la
+       gemella vecchia, piu' vicina alla lettura dopo, la cancellava; la scia
+       perdeva l'anello e il pezzo rimasto non si agganciava (442, riga dritta).
+       Se tutte e due sono precise si tengono TUTTE E DUE, nell'ordine che fa
+       meno strada partendo dall'ultima tenuta. Se una e' presa male (oltre
+       RICALCO_PREC) resta la regola di prima. */
+    const buone = Number(p[3]) <= RICALCO_PREC && Number(q[3]) <= RICALCO_PREC;
+    const prima = fuori[fuori.length - 1];
+    if (buone && prima) {
+      if (mappaDistanza(prima, q) < mappaDistanza(prima, p)) fuori.push(q, p);
+      else fuori.push(p, q);
+    } else {
+      fuori.push(mappaDistanza(q, dopo) < mappaDistanza(p, dopo) ? q : p);
+    }
     i += 2;
   }
   return fuori;
@@ -436,9 +503,26 @@ function sbalzi(punti) {
   return fuori;
 }
 
+/*
+ * LE LETTURE IMPRECISE NON GUIDANO LA VIA. Una posizione con cento metri di
+ * precisione dichiarata puo' cadere sulla strada accanto, e il calcolatore la
+ * prende sul serio: il 15/09 a Bolzano una lettura da 110 m messa su via Galilei
+ * trasformava 630 m di via Arginale in un giro di 2975 m, la via veniva scartata
+ * perche' troppo lunga e restava una riga dritta che tagliava tutto. Senza quella
+ * lettura il calcolatore da' 749 m sulla strada giusta.
+ * Si tolgono dal CALCOLO (i pallini restano tutti) quelle oltre PREC_VIA metri,
+ * ma mai la prima e l'ultima, e mai se ne resterebbero meno di due.
+ */
+const PREC_VIA = 60;
+function senzaImprecise(punti) {
+  const fuori = punti.filter((p, i) => i === 0 || i === punti.length - 1
+    || !(Number(p[3]) > PREC_VIA));
+  return fuori.length >= 2 ? fuori : punti;
+}
+
 /** una lettura ogni venticinque metri, e niente di quello che manda da fermo */
 function sfoltisci(grezzi) {
-  const punti = grezzi.length > 2 ? sbalzi(gemelle(grezzi)) : grezzi;
+  const punti = grezzi.length > 2 ? dietrofront(sbalzi(gemelle(senzaImprecise(grezzi)))) : grezzi;
   const fuori = [punti[0]];
   for (let i = 1; i < punti.length; i++) {
     const u = fuori[fuori.length - 1];
@@ -461,7 +545,7 @@ async function aggancia(punti, profilo) {
   for (let i = 0; i < punti.length - 1; i += PEZZO - 1) {
     const fetta = punti.slice(i, i + PEZZO);
     if (fetta.length < 2) break;
-    const r = await chiedi(VALHALLA + '/trace_route', {
+    const r = await chiedi(indirizzo('trace_route'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -538,7 +622,7 @@ async function rotte(punti, profilo, motore) {
    */
   const tappa = { radius: 30, type: 'break' };
   if (profilo === 'auto') tappa.search_filter = { min_road_class: 'residential' };
-  const r = await chiedi(VALHALLA + '/route', {
+  const r = await chiedi(indirizzo('route'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -614,10 +698,74 @@ function ricalco(linea, pezzo) {
   return n > 1 ? n - 1 : 0;
 }
 
+/* metri di andirivieni che si accetta di cancellare: oltre, non e' una lettura
+   consegnata in ritardo, e' un giro che qualcuno ha fatto davvero */
+const DIETRO_MAX = 200;
+
+/**
+ * IL DIETROFRONT. Ogni tanto il telefono consegna una posizione VECCHIA dopo una
+ * nuova - la tiene in pancia e la manda col gruppo dopo. Nella fila diventa un
+ * andirivieni: avanti, indietro, e avanti di nuovo. Il calcolatore lo prende sul
+ * serio e, per passare da tutte e tre, infila le stradine di servizio e i cortili:
+ * il 17/09 mamma risultava girare dentro un cortile fra via dell'Olmo e via
+ * Stazione per UNA lettura delle 07:55:58 arrivata in ritardo di quaranta secondi.
+ * Regola: se togliendo la lettura di mezzo il cammino si accorcia di parecchio, e
+ * quella lettura non e' piu' precisa delle due vicine, si butta. Il taglio si
+ * ferma a DIETRO_MAX, se no si cancellerebbe anche l'inversione di chi in fondo a
+ * una via ci e' andato e poi e' tornato indietro sul serio.
+ */
+function dietrofront(punti) {
+  if (punti.length < 3) return punti;
+  const fuori = [punti[0]];
+  for (let i = 1; i + 1 < punti.length; i++) {
+    const a = fuori[fuori.length - 1];
+    const b = punti[i];
+    const c = punti[i + 1];
+    const giro = mappaDistanza(a, b) + mappaDistanza(b, c);
+    const dritto = mappaDistanza(a, c);
+    const suo = Number(b[3]) || 0;
+    const vicine = Math.min(Number(a[3]) || 0, Number(c[3]) || 0);
+    const storto = giro > dritto * 1.5 + 30 && giro - dritto <= DIETRO_MAX;
+    if (storto && suo >= vicine) continue;
+    fuori.push(b);
+  }
+  fuori.push(punti[punti.length - 1]);
+  return fuori;
+}
+
+/**
+ * LA CUCITURA ALL'INDIETRO. Due pezzi di seguito nascono dalla STESSA lettura, ma
+ * uno la fa agganciare alla via dal calcolatore e l'altro gliela da' come tappa:
+ * i due la appoggiano sulla strada in due punti diversi, anche a decine di metri.
+ * Cosi' il pezzo nuovo comincia PIU' INDIETRO di dove finisce la scia, ripassa da
+ * li' e prosegue; e la riga che cuce i due capi taglia dritta quello che c'e' in
+ * mezzo. Il 17/09 era una casa vicino alla scuola: 63 m di linea dentro
+ * l'edificio, e via dell'Olmo disegnata due volte.
+ * Quindi: del pezzo nuovo si buttano i vertici iniziali finche' si AVVICINANO
+ * alla coda della scia, cioe' si riparte da dove i due pezzi si toccano davvero.
+ * Il tetto e' quello del ricalco: oltre, non e' una cucitura storta, e' un giro
+ * che qualcuno ha fatto per davvero, e non si tocca.
+ */
+function cuci(linea, pezzo) {
+  const coda = linea[linea.length - 1];
+  if (!coda || pezzo.length < 3) return pezzo;
+  const salto = mappaDistanza(coda, pezzo[0]);
+  if (salto <= RICALCO || salto > RICALCO_MAX) return pezzo;
+  let k = 0;
+  let quanto = 0;
+  while (k + 1 < pezzo.length
+    && mappaDistanza(coda, pezzo[k + 1]) < mappaDistanza(coda, pezzo[k])) {
+    quanto += mappaDistanza(pezzo[k], pezzo[k + 1]);
+    if (quanto > RICALCO_MAX) return pezzo;
+    k += 1;
+  }
+  return k ? pezzo.slice(k) : pezzo;
+}
+
 function attacca(linea, pezzo) {
   const doppio = ricalco(linea, pezzo);
   if (doppio) linea.length -= doppio;
-  (doppio ? pezzo.slice(doppio) : pezzo).forEach((c) => {
+  cuci(linea, doppio ? pezzo.slice(doppio) : pezzo).forEach((c) => {
     const u = linea[linea.length - 1];
     if (!u || u[0] !== c[0] || u[1] !== c[1]) linea.push(c);
   });
@@ -640,7 +788,7 @@ function chiaveViaggio(blocco, o) {
      davvero, due volte. Col numero di versione dentro, il primo giro dopo un
      aggiornamento si ricalcola e poi si torna a pescare come sempre. */
   return [
-    MAPPA_VERSIONE, o.motore, o.profilo, o.salto, o.giro, o.fermo, o.pausa,
+    MAPPA_CALCOLO, o.motore, o.profilo, o.salto, o.giro, o.fermo, o.pausa,
     g.length, g[0][2] || 0, g[g.length - 1][2] || 0,
     g[0][0].toFixed(5), g[0][1].toFixed(5),
   ].join(':');
@@ -831,7 +979,10 @@ async function pezzoDaBlocco(blocco, o) {
  */
 export async function agganciaStrade(punti, o, quandoPronto) {
   if (!punti || punti.length < 2) return null;
-  if (o.motore !== 'valhalla' && o.motore !== 'osrm') return null;
+  if (o.motore !== 'valhalla' && o.motore !== 'osrm' && o.motore !== 'stadia') return null;
+  IN_USO.motore = o.motore;
+  IN_USO.chiave = o.chiave || '';
+  if (o.motore === 'stadia' && !IN_USO.chiave) return null;
   /*
    * LA CHIAVE DELLA MEMORIA DI PAGINA. Ci vanno DUE cose che prima mancavano, e
    * mancavano tutte e due per lo stesso motivo: si era guardato solo a cosa

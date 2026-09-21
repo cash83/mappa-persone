@@ -1,4 +1,4 @@
-import { MAPPA_BASE, MAPPA_SFONDI, MAPPA_SFONDO, MAPPA_ZOOM } from './costanti.js?v=3.3.14';
+import { MAPPA_BASE, MAPPA_SFONDI, MAPPA_SFONDO, MAPPA_ZOOM } from './costanti.js?v=3.3.18';
 
 /**
  * LA GESTIONE DELLA MAPPA. Qui dentro sta tutto e solo quello che riguarda la
@@ -90,6 +90,10 @@ export class Carta {
     };
     piano('zone', 450, false);
     piano('scie', 455, true);
+    /* i pallini su un piano loro, SOPRA tutte le scie: con piu' persone la scia
+       di chi viene disegnato dopo copriva i pallini di chi c'era prima. Il tocco
+       resta acceso, perche' il pallino apre l'ora. */
+    piano('pallini', 457, true);
     // le frecce sopra TUTTE le scie, se no la linea di chi e' disegnato dopo le copriva
     piano('frecce', 458, false);
     piano('nomiZone', 465, false);

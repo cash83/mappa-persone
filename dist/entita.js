@@ -1,13 +1,13 @@
 import {
   MAPPA_DIM, MAPPA_MUCCHIO, MAPPA_MUCCHIO_OPACITA, MAPPA_OPACITA, MAPPA_PRINCIPALE,
   MAPPA_SFONDO_CART, MAPPA_SUE, MAPPA_VICINO, MAPPA_ZONA_SPENTA,
-} from './costanti.js?v=3.3.14';
+} from './costanti.js?v=3.3.18';
 import {
   mappaAffianca, mappaColore, mappaDistanza, mappaElenco, mappaOra, mappaRighe, mappaSalta,
   mappaSua,
-} from './utili.js?v=3.3.14';
-import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.14';
-import { parla } from './lingue.js?v=3.3.14';
+} from './utili.js?v=3.3.18';
+import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.18';
+import { parla } from './lingue.js?v=3.3.18';
 
 /**
  * LA GESTIONE DELLE ENTITA'. Qui dentro sta tutto e solo quello che riguarda
@@ -473,20 +473,33 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
              TOCCO: sul telefono, se no, non si vedeva mai. E
              `bubblingMouseEvents: false` serve perche' il tocco non arrivi anche
              alla mappa, che chiuderebbe subito quello che si e' appena aperto. */
+          /* IL BORDINO BIANCO. Il pallino ha il colore della persona, come la sua
+             scia, e da quando si siede SOPRA la scia (3.3.x) spariva dentro: un
+             cerchio viola su una linea viola si vede solo dove sporge. Un filo
+             bianco attorno lo stacca dalla linea senza cambiargli colore - quindi
+             senza perdere il "di chi e'" - e funziona su qualunque sfondo, chiaro,
+             scuro o satellite. Il bianco NON sbiadisce col pallino: sui piu' vecchi
+             restava un filo grigino che non si vedeva. Sbiadisce solo il colore
+             dentro, che e' quello che racconta l'eta' della lettura. */
           const c = carta.usa(kp, () => {
             const q = L.circleMarker(dove, {
               radius: dim / 2,
-              weight: 0,
+              weight: 1.5,
+              color: '#fff',
+              opacity: 1,
               fillColor: col,
               fillOpacity: eta,
               bubblingMouseEvents: false,
-              pane: 'scie',
+              pane: 'pallini',
             });
             q.on('click', () => q.openTooltip());
             return q;
           });
           c.setLatLng(dove);
-          c.setStyle({ fillColor: col, fillOpacity: eta, radius: dim / 2 });
+          c.setStyle({
+            color: '#fff', opacity: 1, weight: 1.5,
+            fillColor: col, fillOpacity: eta, radius: dim / 2,
+          });
           /* Il nome sopra e l'ora sotto, come fa la scheda di serie. Con la sola
              ora, dove due persone si incrociano non si capiva di chi fosse il
              pallino che si era appena toccato. */

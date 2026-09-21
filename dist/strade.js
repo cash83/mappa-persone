@@ -1,5 +1,5 @@
-import { mappaDistanza } from './utili.js?v=3.3.14';
-import { MAPPA_CALCOLO } from './costanti.js?v=3.3.14';
+import { mappaDistanza } from './utili.js?v=3.3.18';
+import { MAPPA_CALCOLO } from './costanti.js?v=3.3.18';
 
 /**
  * LA VIA SOTTO LA SCIA. E' lo schema che funzionava, rimesso com'era:

@@ -62,7 +62,7 @@ function firmaFonti(config) {
 function firmaVie(config) {
   const f = {};
   mappaRighe(config).forEach((r) => {
-    f[r.entity] = ['via', 'profilo', 'via_salto', 'via_giro', 'fermo_m', 'pausa_min', 'sosta_linea']
+    f[r.entity] = ['profilo', 'via_salto', 'via_giro', 'fermo_m', 'pausa_min', 'sosta_linea']
       .map((k) => mappaSua(r, k, MAPPA_SUE)).join('|');
   });
   return f;
@@ -305,13 +305,6 @@ export class MappaPersone extends HTMLElement {
     await Promise.all(mappaRighe(this._config).map(async (riga) => {
       const ent = riga.entity;
       if (!this._storia[ent]) return;
-      if (!mappaSua(riga, 'via', MAPPA_SUE)) {
-        if (this._strade[ent]) {
-          delete this._strade[ent];
-          this._dipingi();
-        }
-        return;
-      }
       /* Ogni viaggio compare appena e' pronto, senza aspettare gli altri - ma
          SOLO la prima volta. Se una scia c'e' gia', la nuova si tiene nascosta
          finche' non e' finita e poi si scambia in un colpo: se no a ogni cursore

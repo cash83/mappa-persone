@@ -68,7 +68,8 @@ type: custom:mappa-persone
 ore: 12                 # quante ore di scia mostrare
 sfondo: stradale        # sfondo della mappa
 ingrandimento: 16       # quanto può stringere quando si inquadra da sola
-aggancio: valhalla      # chi calcola le strade: no | valhalla | osrm
+aggancio: stadia        # chi calcola le strade: no | stadia
+stadia_chiave: xxx      # la chiave di Stadia Maps, se l'aggancio e' acceso
 entities:
   - entity: person.anna
     colore: deep-purple
@@ -142,10 +143,10 @@ viene scartato è solo il suggerimento su dove far passare la linea.
 | `entities` | — | L'elenco di persone, tracciatori e zone da disegnare |
 | `ore` | `12` | Quante ore di scia mostrare. `0` = solo dove sono adesso |
 | `sfondo` | `stradale` | `stradale`, `scuro`, `satellite`, `topografico` |
-| `sfondo_cartellino` | `satellite` | Sfondo della mappina dentro il cartellino |
 | `ingrandimento` | `16` | Quanto può stringere quando si inquadra da sola |
 | `gruppo_opacita` | `100` | Quanto si vede il pallino di gruppo |
-| `aggancio` | `no` | Chi calcola le strade: `no`, `valhalla`, `osrm` |
+| `aggancio` | `no` | Chi calcola le strade: `no` oppure `stadia`. Vale per tutti |
+| `stadia_chiave` | — | La chiave di [Stadia Maps](https://stadiamaps.com), gratuita per uso non commerciale |
 
 ### Di ogni persona o tracciatore
 
@@ -155,7 +156,6 @@ viene scartato è solo il suggerimento su dove far passare la linea.
 | `dim` | `40` | Grandezza dell'icona in pixel |
 | `opacita` | `100` | Quanto è piena l'icona |
 | `foto` | — | Una foto per l'icona, al posto di quella di Home Assistant |
-| `via` | `true` | Appoggia la scia di questa persona sulle strade |
 | `profilo` | `automatico` | `automatico`, `piedi`, `bici`, `auto`, `bus` |
 | `via_salto` | `160` | Oltre questa distanza (m) calcola la strada invece di agganciare |
 | `via_giro` | `200` | Di quanto (%) può allungare un percorso calcolato prima di essere buttato |
@@ -219,10 +219,9 @@ Il cerchio della zona usa sempre il **raggio vero** impostato in Home Assistant.
 * Il tasto **Maps** dentro il cartellino di una persona apre una mappina di Google, e per
   farlo manda a Google la **posizione di quella persona in quel momento**. Finche' non lo
   tocchi non esce niente.
-* L'aggancio alle strade, quando è acceso, manda le **coordinate della scia** ai server
-  pubblici [Valhalla](https://valhalla1.openstreetmap.de) o
-  [OSRM](https://router.project-osrm.org). Con `aggancio: no` non esce niente dalla tua rete e
-  le scie restano righe dritte.
+* L'aggancio alle strade, quando è acceso, manda le **coordinate della scia** a
+  [Stadia Maps](https://stadiamaps.com), col tuo account. Con `aggancio: no` non esce niente
+  dalla tua rete e le scie restano righe dritte.
 * Le scie calcolate vengono tenute nel tuo browser per tre giorni, così lo stesso viaggio non
   viene richiesto due volte. Non vanno da nessun'altra parte e non escono da Home Assistant.
 
@@ -231,8 +230,8 @@ Il cerchio della zona usa sempre il **raggio vero** impostato in Home Assistant.
 ## Ringraziamenti
 
 Dati della mappa © [OpenStreetMap](https://www.openstreetmap.org/copyright), tasselli della carta stradale, del satellite e della mappa scura © Esri.
-Calcolo delle strade con
-[Valhalla](https://valhalla.readthedocs.io) e [OSRM](https://project-osrm.org).
+Calcolo delle strade con [Valhalla](https://valhalla.readthedocs.io), servito da
+[Stadia Maps](https://stadiamaps.com).
 Mappa disegnata con [Leaflet](https://leafletjs.com) 1.9.4, incluso in `leaflet/` con la sua licenza BSD-2.
 
 Distribuita con [licenza MIT](LICENSE).

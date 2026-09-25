@@ -66,7 +66,8 @@ type: custom:mappa-persone
 ore: 12                 # hours of trail to show
 sfondo: stradale        # map background
 ingrandimento: 16       # how far it may zoom in when framing itself
-aggancio: valhalla      # who works out the roads: no | valhalla | osrm
+aggancio: stadia        # who works out the roads: no | stadia
+stadia_chiave: xxx      # your Stadia Maps key, when snapping is on
 entities:
   - entity: person.anna
     colore: deep-purple
@@ -140,10 +141,10 @@ about where to run the line.
 | `entities` | — | The list of people, trackers and zones to draw |
 | `ore` | `12` | How many hours of trail to show. `0` = only where they are now |
 | `sfondo` | `stradale` | `stradale`, `scuro`, `satellite`, `topografico` |
-| `sfondo_cartellino` | `satellite` | Background of the mini map inside the popup |
 | `ingrandimento` | `16` | How far it may zoom in when framing itself |
 | `gruppo_opacita` | `100` | How visible the group badge is |
-| `aggancio` | `no` | Who works out the roads: `no`, `valhalla`, `osrm` |
+| `aggancio` | `no` | Who works out the roads: `no` or `stadia`. Applies to everyone |
+| `stadia_chiave` | — | Your [Stadia Maps](https://stadiamaps.com) key, free for non-commercial use |
 
 ### Per person or tracker
 
@@ -153,7 +154,6 @@ about where to run the line.
 | `dim` | `40` | Icon size in pixels |
 | `opacita` | `100` | How solid the icon is |
 | `foto` | — | A photo for the icon, instead of the one from Home Assistant |
-| `via` | `true` | Snap this person's trail onto the roads |
 | `profilo` | `automatico` | `automatico`, `piedi`, `bici`, `auto`, `bus` |
 | `via_salto` | `160` | Beyond this distance (m), compute the road instead of snapping |
 | `via_giro` | `200` | How much longer (%) a computed route may be before it is rejected |
@@ -215,9 +215,9 @@ The zone circle always uses the **real radius** set in Home Assistant.
   card running in a browser cannot.
 * The **Maps** button inside a person's popup opens a small Google map, and to do that it
   sends Google **that person's current position**. Nothing leaves until you press it.
-* Road snapping, when enabled, sends the **coordinates of the trail** to the public
-  [Valhalla](https://valhalla1.openstreetmap.de) or [OSRM](https://router.project-osrm.org)
-  servers. With `aggancio: no` nothing ever leaves your network and trails stay straight lines.
+* Road snapping, when enabled, sends the **coordinates of the trail** to
+  [Stadia Maps](https://stadiamaps.com), under your own account. With `aggancio: no` nothing
+  ever leaves your network and trails stay straight lines.
 * Computed trails are cached in your browser for three days so the same trip is not requested
   again. Nothing is sent anywhere else, and nothing is stored outside your Home Assistant.
 
@@ -226,7 +226,7 @@ The zone circle always uses the **real radius** set in Home Assistant.
 ## Credits
 
 Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, street, satellite and dark tiles © Esri.
-Routing by [Valhalla](https://valhalla.readthedocs.io) and
-[OSRM](https://project-osrm.org). Map rendering by [Leaflet](https://leafletjs.com) 1.9.4, bundled in `leaflet/` under its own BSD-2 licence.
+Routing by [Valhalla](https://valhalla.readthedocs.io), served by
+[Stadia Maps](https://stadiamaps.com). Map rendering by [Leaflet](https://leafletjs.com) 1.9.4, bundled in `leaflet/` under its own BSD-2 licence.
 
 Released under the [MIT licence](LICENSE).

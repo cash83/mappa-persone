@@ -1,6 +1,6 @@
 import {
   MAPPA_DIM, MAPPA_MUCCHIO, MAPPA_MUCCHIO_OPACITA, MAPPA_OPACITA, MAPPA_PRINCIPALE,
-  MAPPA_SFONDO_CART, MAPPA_SUE, MAPPA_VICINO, MAPPA_ZONA_SPENTA,
+  MAPPA_SFONDO, MAPPA_SUE, MAPPA_VICINO, MAPPA_ZONA_SPENTA,
 } from './costanti.js';
 import {
   mappaAffianca, mappaColore, mappaDistanza, mappaElenco, mappaOra, mappaRighe, mappaSalta,
@@ -289,7 +289,7 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
          mosso. Adesso, con le strade accese, finche' non c'e' niente di pronto
          restano solo i pallini, che sono le posizioni vere. La fila si disegna
          solo per chi le strade le ha spente. */
-      const conStrade = (config.aggancio === 'valhalla' || config.aggancio === 'osrm' || config.aggancio === 'stadia') && !!sua('via');
+      const conStrade = config.aggancio === 'valhalla' || config.aggancio === 'osrm' || config.aggancio === 'stadia';
       const pezzi = agganciata
         || (conStrade ? [] : [{ p: passato.map((p) => [p[0], p[1]]).concat([[lat, lon]]) }]);
       /* Lo scostamento e' in PIXEL, per restare visibile a ogni ingrandimento.
@@ -451,12 +451,9 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
          verita', la linea e' solo il collegamento. */
       if (sua('pallini')) {
         const passo = Number(sua('passo_pallini')) || 0;
-        const secondi = Number(sua('passo_pallini_sec')) || 0;
         const dim = Number(sua('pallini_dim')) || 5;
         const sfuma = !!sua('sfuma');
-        /* prima il tempo (un pallino ogni tot secondi), poi i metri */
-        let mostrati = secondi > 0 ? diradaNelTempo(passato, secondi * 1000) : passato;
-        if (passo > 0) mostrati = assottiglia(mostrati, passo);
+        const mostrati = passo > 0 ? assottiglia(passato, passo) : passato;
         /* SULLA SCIA. Il GPS mette la lettura a dieci, venti metri dalla strada, e
            accanto a una scia agganciata il pallino sembrava un altro percorso. Si
            sposta sul punto piu' vicino della linea del SUO viaggio (quella il cui
@@ -620,7 +617,7 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
       // si rifa' a ogni apertura: dentro c'e' l'ora, la via, la distanza da casa
       m.setPopupContent(cartellino(hass, ent, st, col, () => {
         setTimeout(sistema, 30);
-      }, alto, config.sfondo_cartellino || MAPPA_SFONDO_CART));
+      }, alto, config.sfondo || MAPPA_SFONDO));
       m.openPopup();
       setTimeout(sistema, 30);
     });
@@ -804,18 +801,6 @@ function assottiglia(punti, metri) {
   const fuori = [punti[0]];
   for (let i = 1; i < punti.length; i++) {
     if (mappaDistanza(fuori[fuori.length - 1], punti[i]) >= metri) fuori.push(punti[i]);
-  }
-  const u = punti[punti.length - 1];
-  if (fuori[fuori.length - 1] !== u) fuori.push(u);
-  return fuori;
-}
-
-/** un pallino ogni tot millisecondi: con una lettura ogni dieci secondi la scia era un rosario */
-function diradaNelTempo(punti, ms) {
-  if (!punti.length) return punti;
-  const fuori = [punti[0]];
-  for (let i = 1; i < punti.length; i++) {
-    if ((punti[i][2] || 0) - (fuori[fuori.length - 1][2] || 0) >= ms) fuori.push(punti[i]);
   }
   const u = punti[punti.length - 1];
   if (fuori[fuori.length - 1] !== u) fuori.push(u);

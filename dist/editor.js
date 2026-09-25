@@ -1,10 +1,10 @@
 import {
   MAPPA_AGGANCIO, MAPPA_DIM, MAPPA_OPACITA, MAPPA_ORE, MAPPA_SFONDI, MAPPA_SFONDO,
-  MAPPA_MUCCHIO_OPACITA, MAPPA_SFONDO_CART, MAPPA_SUE, MAPPA_VERSIONE, MAPPA_ZOOM,
-} from './costanti.js?v=3.3.21';
-import { mappaRighe, mappaSua } from './utili.js?v=3.3.21';
-import { caricaFoto, togliFoto } from './foto.js?v=3.3.21';
-import { parla } from './lingue.js?v=3.3.21';
+  MAPPA_MUCCHIO_OPACITA, MAPPA_SUE, MAPPA_VERSIONE, MAPPA_ZOOM,
+} from './costanti.js?v=3.3.22';
+import { mappaRighe, mappaSua } from './utili.js?v=3.3.22';
+import { caricaFoto, togliFoto } from './foto.js?v=3.3.22';
+import { parla } from './lingue.js?v=3.3.22';
 
 /**
  * La finestra delle impostazioni.
@@ -49,7 +49,6 @@ const SCHEMA_ZONA = [
  * porta dietro diciotto numeri copiati.
  */
 const schemaSue = (D) => [
-  { name: 'via', selector: { boolean: {} } },
   { name: 'profilo', selector: { select: { mode: 'dropdown', options: [
     { value: 'automatico', label: D.profilo.automatico },
     { value: 'piedi', label: D.profilo.piedi },
@@ -73,7 +72,6 @@ const schemaSue = (D) => [
   { name: 'pallini', selector: { boolean: {} } },
   { name: 'pallini_dim', selector: { number: { min: 2, max: 14, step: 1, mode: 'slider' } } },
   { name: 'passo_pallini', selector: { number: { min: 0, max: 200, step: 5, mode: 'slider' } } },
-  { name: 'passo_pallini_sec', selector: { number: { min: 0, max: 300, step: 5, mode: 'slider' } } },
   { name: 'pallini_sulla_scia', selector: { boolean: {} } },
   { name: 'sosta_linea', selector: { number: { min: 0, max: 300, step: 5, mode: 'slider' } } },
   { name: 'sfuma', selector: { boolean: {} } },
@@ -85,20 +83,13 @@ const scelteSfondo = (D) => MAPPA_SFONDI.map(
   (x) => ({ value: x.chiave, label: (D.sfondi && D.sfondi[x.chiave]) || x.nome })
 );
 
-/* la mappina del cartellino e' quella di Google: ha solo queste due */
-const scelteCartellino = (D) => scelteSfondo(D)
-  .filter((x) => x.value === 'stradale' || x.value === 'satellite');
-
 const schemaGenerale = (D) => [
   { name: 'sfondo', selector: { select: { mode: 'dropdown', options: scelteSfondo(D) } } },
-  { name: 'sfondo_cartellino', selector: { select: { mode: 'dropdown', options: scelteCartellino(D) } } },
   { name: 'ingrandimento', selector: { number: { min: 3, max: 19, step: 1, mode: 'slider' } } },
   { name: 'ore', selector: { number: { min: 0, max: 72, step: 1, mode: 'slider' } } },
   { name: 'gruppo_opacita', selector: { number: { min: 10, max: 100, step: 5, mode: 'slider' } } },
   { name: 'aggancio', selector: { select: { mode: 'dropdown', options: [
     { value: 'no', label: D.aggancio.no },
-    { value: 'valhalla', label: D.aggancio.valhalla },
-    { value: 'osrm', label: D.aggancio.osrm },
     { value: 'stadia', label: D.aggancio.stadia },
   ] } } },
   { name: 'stadia_chiave', selector: { text: { type: 'password' } } },
@@ -176,7 +167,7 @@ export class MappaPersoneEditor extends HTMLElement {
     this._config = Object.assign(
       {
         entities: [], ore: MAPPA_ORE, sfondo: MAPPA_SFONDO,
-        sfondo_cartellino: MAPPA_SFONDO_CART, ingrandimento: MAPPA_ZOOM,
+        ingrandimento: MAPPA_ZOOM,
         aggancio: MAPPA_AGGANCIO,
       },
       config || {}
@@ -268,7 +259,6 @@ export class MappaPersoneEditor extends HTMLElement {
       const v = ev.detail.value || {};
       this._manda(Object.assign({}, this._config, {
         sfondo: v.sfondo || MAPPA_SFONDO,
-        sfondo_cartellino: v.sfondo_cartellino || MAPPA_SFONDO_CART,
         ingrandimento: Number(v.ingrandimento) || MAPPA_ZOOM,
         gruppo_opacita: v.gruppo_opacita === undefined || v.gruppo_opacita === null
           || v.gruppo_opacita === '' ? MAPPA_MUCCHIO_OPACITA : Number(v.gruppo_opacita),
@@ -611,7 +601,6 @@ export class MappaPersoneEditor extends HTMLElement {
       const ore = this._config.ore;
       const dati = {
         sfondo: this._config.sfondo || MAPPA_SFONDO,
-        sfondo_cartellino: this._config.sfondo_cartellino || MAPPA_SFONDO_CART,
         ingrandimento: Number(this._config.ingrandimento) || MAPPA_ZOOM,
         gruppo_opacita: this._config.gruppo_opacita === undefined
           || this._config.gruppo_opacita === null || this._config.gruppo_opacita === ''

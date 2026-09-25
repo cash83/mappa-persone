@@ -3,7 +3,7 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.3.21';
+export const MAPPA_VERSIONE = '3.3.22';
 
 /* La versione del CALCOLO delle vie: entra nella chiave dei viaggi in dispensa.
    Si alza SOLO quando cambia il modo di ricavare la via (pulizia delle letture,
@@ -38,7 +38,6 @@ export const MAPPA_AGGANCIO = 'no';   // 'no', 'valhalla' o 'osrm'
     - sosta_linea da 25 a 0. Dentro una sosta le posizioni ballano, e unirle
       con una linea fa una ragnatela. I pallini ci sono lo stesso. */
 export const MAPPA_SUE = {
-  via: true,                 // fai seguire la via alla scia
   profilo: 'automatico',     // automatico, piedi, bici, auto
   via_salto: 160,            // m: buco oltre il quale si calcola la via
   via_giro: 200,             // %: si scarta il percorso piu' lungo del vero di tanto
@@ -54,7 +53,6 @@ export const MAPPA_SUE = {
   pallini: true,             // segna le posizioni registrate
   pallini_dim: 9,            // px
   passo_pallini: 0,          // m: 0 = tutti
-  passo_pallini_sec: 0,      // s: un pallino ogni tot secondi. 0 = tutti
   pallini_sulla_scia: true,  // sposta il pallino sulla scia del suo viaggio (se vicino)
   sosta_linea: 0,            // m: la linea dentro le soste. 0 = niente linea
   sfuma: true,               // sbiadisci il piu' vecchio
@@ -87,8 +85,7 @@ export const MAPPA_VICINO = 0;
  * `maxZoom` fin dove si puo' ingrandire: mettendo solo il primo, oltre quel
  * punto la mappa diventa bianca.
  */
-export const MAPPA_SFONDO = 'stradale';        // lo sfondo della mappa grande
-export const MAPPA_SFONDO_CART = 'satellite';  // e quello della mappina nel cartellino
+export const MAPPA_SFONDO = 'stradale';        // lo sfondo della mappa, mappina del cartellino compresa
 
 export const MAPPA_SFONDI = [
   {

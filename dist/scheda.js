@@ -1,12 +1,12 @@
 import {
   MAPPA_AGGANCIO, MAPPA_ORE, MAPPA_RILEGGI, MAPPA_SFONDO, MAPPA_SUE, MAPPA_ZOOM,
-} from './costanti.js?v=3.3.22';
-import { MAPPA_STILE } from './stile.js?v=3.3.22';
-import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.3.22';
-import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.3.22';
-import { agganciaStrade } from './strade.js?v=3.3.22';
-import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.3.22';
-import { parla } from './lingue.js?v=3.3.22';
+} from './costanti.js?v=3.3.23';
+import { MAPPA_STILE } from './stile.js?v=3.3.23';
+import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.3.23';
+import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.3.23';
+import { agganciaStrade } from './strade.js?v=3.3.23';
+import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.3.23';
+import { parla } from './lingue.js?v=3.3.23';
 
 /**
  * LA SCHEDA. Tiene insieme i due pezzi e parla con Home Assistant: riceve la
@@ -289,7 +289,7 @@ export class MappaPersone extends HTMLElement {
    */
   async _aggancia() {
     const motore = this._config && this._config.aggancio;
-    if (motore !== 'valhalla' && motore !== 'osrm' && motore !== 'stadia') {
+    if (motore !== 'stadia') {
       if (Object.keys(this._strade).length) {
         this._strade = {};
         this._dipingi();

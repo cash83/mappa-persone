@@ -1,13 +1,13 @@
 import {
   MAPPA_DIM, MAPPA_MUCCHIO, MAPPA_MUCCHIO_OPACITA, MAPPA_OPACITA, MAPPA_PRINCIPALE,
   MAPPA_SFONDO, MAPPA_SUE, MAPPA_VICINO, MAPPA_ZONA_SPENTA,
-} from './costanti.js?v=3.3.22';
+} from './costanti.js?v=3.3.23';
 import {
   mappaAffianca, mappaColore, mappaDistanza, mappaElenco, mappaOra, mappaRighe, mappaSalta,
   mappaSua,
-} from './utili.js?v=3.3.22';
-import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.22';
-import { parla } from './lingue.js?v=3.3.22';
+} from './utili.js?v=3.3.23';
+import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.23';
+import { parla } from './lingue.js?v=3.3.23';
 
 /**
  * LA GESTIONE DELLE ENTITA'. Qui dentro sta tutto e solo quello che riguarda
@@ -289,7 +289,7 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
          mosso. Adesso, con le strade accese, finche' non c'e' niente di pronto
          restano solo i pallini, che sono le posizioni vere. La fila si disegna
          solo per chi le strade le ha spente. */
-      const conStrade = config.aggancio === 'valhalla' || config.aggancio === 'osrm' || config.aggancio === 'stadia';
+      const conStrade = config.aggancio === 'stadia';
       const pezzi = agganciata
         || (conStrade ? [] : [{ p: passato.map((p) => [p[0], p[1]]).concat([[lat, lon]]) }]);
       /* Lo scostamento e' in PIXEL, per restare visibile a ogni ingrandimento.

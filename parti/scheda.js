@@ -289,7 +289,7 @@ export class MappaPersone extends HTMLElement {
    */
   async _aggancia() {
     const motore = this._config && this._config.aggancio;
-    if (motore !== 'valhalla' && motore !== 'osrm' && motore !== 'stadia') {
+    if (motore !== 'stadia') {
       if (Object.keys(this._strade).length) {
         this._strade = {};
         this._dipingi();

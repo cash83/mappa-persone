@@ -1,5 +1,5 @@
-import { mappaDistanza } from './utili.js?v=3.3.22';
-import { MAPPA_CALCOLO } from './costanti.js?v=3.3.22';
+import { mappaDistanza } from './utili.js?v=3.3.23';
+import { MAPPA_CALCOLO } from './costanti.js?v=3.3.23';
 
 /**
  * LA VIA SOTTO LA SCIA. E' lo schema che funzionava, rimesso com'era:
@@ -25,16 +25,13 @@ const DISPENSA = 'mappa-persone:viaggi';  // e quello di prima, nel browser
 const TIENI = 60;                // quanti viaggi si conservano
 const GIORNI = 3;                // per quanti giorni
 const POSTO = 3000000;           // e in quanto spazio (caratteri, circa 3 MB)
-const VALHALLA = 'https://valhalla1.openstreetmap.de';
-const OSRM = 'https://router.project-osrm.org';
 const STADIA = 'https://api.stadiamaps.com';
-const IN_USO = { motore: 'valhalla', chiave: '' };
+const IN_USO = { motore: 'stadia', chiave: '' };
+/* Stadia serve Valhalla, ma l'aggancio la' si chiama `map_match`, non
+   `trace_route`: con quel nome risponde 404. */
 function indirizzo(servizio) {
-  if (IN_USO.motore === 'stadia') {
-    const nome = servizio === 'trace_route' ? 'map_match' : servizio;
-    return STADIA + '/' + nome + '/v1?api_key=' + encodeURIComponent(IN_USO.chiave);
-  }
-  return VALHALLA + '/' + servizio;
+  const nome = servizio === 'trace_route' ? 'map_match' : servizio;
+  return STADIA + '/' + nome + '/v1?api_key=' + encodeURIComponent(IN_USO.chiave);
 }
 const PEZZO = 100;               // punti per richiesta di aggancio
 const TAPPE = 10;                /* quante tappe accetta il server pubblico in una
@@ -581,34 +578,7 @@ async function aggancia(punti, profilo) {
  * Il `radius: 30` conta e resta: senza, lo stesso tratto veniva tre volte piu'
  * lungo del vero, perche' il calcolatore partiva dalla strada sbagliata.
  */
-/**
- * GLI STESSI BUCHI, MA CHIESTI A OSRM. Chi sceglie OSRM lo sceglie per non
- * mandare niente a Valhalla, e invece i buchi finivano la' lo stesso: la traccia
- * andava a OSRM e i percorsi a Valhalla, sempre. Adesso no.
- * OSRM da' una geometria sola per tutto il percorso, non una per tratta, quindi
- * qui le tratte si chiedono una per una: meno efficiente, ma e' quello che serve
- * per poterle poi accettare o scartare una per una.
- */
-async function rotteOsrm(punti) {
-  const fuori = [];
-  for (let i = 1; i < punti.length; i++) {
-    const a = punti[i - 1];
-    const b = punti[i];
-    const dove = a[1].toFixed(6) + ',' + a[0].toFixed(6) + ';' + b[1].toFixed(6) + ',' + b[0].toFixed(6);
-    try {
-      const r = await chiedi(OSRM + '/route/v1/driving/' + dove + '?overview=full&geometries=geojson');
-      const j = await r.json();
-      const g = j.routes && j.routes[0] && j.routes[0].geometry && j.routes[0].geometry.coordinates;
-      fuori.push(g && g.length > 1 ? g.map((c) => [c[1], c[0]]) : null);
-    } catch (e) {
-      fuori.push(null);
-    }
-  }
-  return fuori;
-}
-
-async function rotte(punti, profilo, motore) {
-  if (motore === 'osrm') return rotteOsrm(punti);
+async function rotte(punti, profilo) {
   /*
    * IL FILTRO SULLE STRADINE. Una lettura presa male cade spesso a una ventina
    * di metri dalla strada, e li' dietro c'e' quasi sempre una corsia di
@@ -639,21 +609,6 @@ async function rotte(punti, profilo, motore) {
   });
 }
 
-/** il ripiego: OSRM, che pero' conosce solo l'automobile e accetta pochi punti */
-async function osrm(punti) {
-  const fuori = [];
-  for (let i = 0; i < punti.length - 1; i += 9) {
-    const fetta = punti.slice(i, i + 10);
-    if (fetta.length < 2) break;
-    const dove = fetta.map((p) => p[1].toFixed(6) + ',' + p[0].toFixed(6)).join(';');
-    const r = await chiedi(OSRM + '/match/v1/driving/' + dove + '?geometries=geojson&overview=full');
-    const j = await r.json();
-    (j.matchings || []).forEach((m) => {
-      ((m.geometry && m.geometry.coordinates) || []).forEach((c) => fuori.push([c[1], c[0]]));
-    });
-  }
-  return fuori.length > 1 ? fuori : null;
-}
 
 /**
  * IL CONTROLLO CHE SALVA TUTTO: la via ricostruita deve COPRIRE la traccia, non
@@ -899,7 +854,7 @@ async function pezzoDaBlocco(blocco, o) {
     for (let n = 0; n < mucchio.quanti; n++) tappe.push(fare[mucchio.da + n].b);
     let g = null;
     try {
-      g = await rotte(tappe, profilo, o.motore);
+      g = await rotte(tappe, profilo);
     } catch (e) {
       g = null;
     }
@@ -914,7 +869,7 @@ async function pezzoDaBlocco(blocco, o) {
       for (let n = 0; n < mucchio.quanti; n++) {
         const b = fare[mucchio.da + n];
         try {
-          const uno = await rotte([b.a, b.b], profilo, o.motore);
+          const uno = await rotte([b.a, b.b], profilo);
           b.via = uno ? uno[0] : null;
         } catch (e2) {
           b.via = null;
@@ -946,7 +901,7 @@ async function pezzoDaBlocco(blocco, o) {
     const quanto = mappaDistanza(uno.a, due.b);
     let g = null;
     try {
-      g = await rotte([uno.a, due.b], profilo, o.motore);
+      g = await rotte([uno.a, due.b], profilo);
     } catch (e) {
       g = null;
     }
@@ -985,7 +940,7 @@ async function pezzoDaBlocco(blocco, o) {
     const grezzi = pezzo.punti.map((q) => [q[0], q[1]]);
     let g = null;
     try {
-      g = o.motore === 'osrm' ? await osrm(pezzo.punti) : await aggancia(pezzo.punti, profilo);
+      g = await aggancia(pezzo.punti, profilo);
     } catch (e) {
       g = null;
       guasto = true;
@@ -1013,10 +968,9 @@ async function pezzoDaBlocco(blocco, o) {
  */
 export async function agganciaStrade(punti, o, quandoPronto) {
   if (!punti || punti.length < 2) return null;
-  if (o.motore !== 'valhalla' && o.motore !== 'osrm' && o.motore !== 'stadia') return null;
-  IN_USO.motore = o.motore;
+  if (o.motore !== 'stadia') return null;
   IN_USO.chiave = o.chiave || '';
-  if (o.motore === 'stadia' && !IN_USO.chiave) return null;
+  if (!IN_USO.chiave) return null;
   /*
    * LA CHIAVE DELLA MEMORIA DI PAGINA. Ci vanno DUE cose che prima mancavano, e
    * mancavano tutte e due per lo stesso motivo: si era guardato solo a cosa

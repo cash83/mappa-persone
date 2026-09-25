@@ -3,7 +3,7 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.3.22';
+export const MAPPA_VERSIONE = '3.3.23';
 
 /* La versione del CALCOLO delle vie: entra nella chiave dei viaggi in dispensa.
    Si alza SOLO quando cambia il modo di ricavare la via (pulizia delle letture,
@@ -16,7 +16,7 @@ export const MAPPA_BASE = '/local/community/mappa-persone/';
 
 export const MAPPA_DIM = 40;        // quanto grande l'icona di una persona, in pixel
 export const MAPPA_OPACITA = 100;   // quanto si vede: 100 pieno, 20 quasi trasparente
-export const MAPPA_AGGANCIO = 'no';   // 'no', 'valhalla' o 'osrm'
+export const MAPPA_AGGANCIO = 'no';   // 'no' oppure 'stadia'
 
 /**
  * LA VIA E I VIAGGI: le diciotto voci che stanno dentro ogni persona, coi

@@ -3,13 +3,13 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.3.18';
+export const MAPPA_VERSIONE = '3.3.20';
 
 /* La versione del CALCOLO delle vie: entra nella chiave dei viaggi in dispensa.
    Si alza SOLO quando cambia il modo di ricavare la via (pulizia delle letture,
    viaggi, richieste): cosi' un aggiornamento che tocca solo il disegno non butta
    via tre giorni di scie gia' calcolate. */
-export const MAPPA_CALCOLO = '3.3.12';
+export const MAPPA_CALCOLO = '3.3.20';
 
 /** dove sono i file sul box: serve per caricare Leaflet da noi, non da internet */
 export const MAPPA_BASE = '/local/community/mappa-persone/';

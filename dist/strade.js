@@ -1,5 +1,5 @@
-import { mappaDistanza } from './utili.js?v=3.3.18';
-import { MAPPA_CALCOLO } from './costanti.js?v=3.3.18';
+import { mappaDistanza } from './utili.js?v=3.3.20';
+import { MAPPA_CALCOLO } from './costanti.js?v=3.3.20';
 
 /**
  * LA VIA SOTTO LA SCIA. E' lo schema che funzionava, rimesso com'era:
@@ -702,6 +702,12 @@ function ricalco(linea, pezzo) {
    consegnata in ritardo, e' un giro che qualcuno ha fatto davvero */
 const DIETRO_MAX = 200;
 
+/* Quanto deve essere FUORI CADENZA la consegna perche' si possa dire che quella
+   lettura e' arrivata in ritardo: almeno venticinque secondi di buco prima, e
+   almeno il triplo del buco che viene dopo. */
+const RITARDO_MIN = 25;
+const RITARDO_VOLTE = 3;
+
 /**
  * IL DIETROFRONT. Ogni tanto il telefono consegna una posizione VECCHIA dopo una
  * nuova - la tiene in pancia e la manda col gruppo dopo. Nella fila diventa un
@@ -726,7 +732,19 @@ function dietrofront(punti) {
     const suo = Number(b[3]) || 0;
     const vicine = Math.min(Number(a[3]) || 0, Number(c[3]) || 0);
     const storto = giro > dritto * 1.5 + 30 && giro - dritto <= DIETRO_MAX;
-    if (storto && suo >= vicine) continue;
+    /* ...MA DEVE ANCHE ESSERE ARRIVATA IN RITARDO. La forma da sola non basta:
+       il 25/09 mattia scende cento metri lungo la circonvallazione e torna
+       indietro, e le due letture del dietrofront erano le piu' precise del
+       viaggio (5 e 8 metri) - buttate tutte e due, la scia tirava dritto e
+       saltava i pallini. Una lettura tenuta in pancia dal telefono si riconosce
+       dalla CONSEGNA, non dal disegno: arriva fuori cadenza, con un buco lungo
+       prima e la successiva subito dietro (mamma il 17/09: quaranta secondi
+       prima, dieci dopo), mentre chi il giro l'ha fatto davvero manda alla sua
+       solita cadenza (mattia: dodici secondi prima, dieci dopo). */
+    const prima = (((b[2] || 0) - ((punti[i - 1] || b)[2] || 0)) / 1000);
+    const dopo = (((c[2] || 0) - (b[2] || 0)) / 1000);
+    const inRitardo = prima >= RITARDO_MIN && prima >= dopo * RITARDO_VOLTE;
+    if (storto && inRitardo && suo >= vicine) continue;
     fuori.push(b);
   }
   fuori.push(punti[punti.length - 1]);
@@ -934,6 +952,22 @@ async function pezzoDaBlocco(blocco, o) {
     }
     const via = g && g[0];
     if (!via || lunghezza(via) > quanto * (o.giro / 100) + 200) continue;
+    /*
+     * ...MA LA STRADA NUOVA DEVE PASSARE DI LI'. Buttare la lettura di mezzo ha
+     * senso solo se il pezzo unico ripassa piu' o meno dove il telefono diceva
+     * di essere. Il 24/09 non era cosi': una lettura da 51 m di precisione (buona
+     * per il filtro generale, che scarta oltre i 60) veniva buttata da questa
+     * regola, che invece scarta oltre i 40, e la strada scelta al suo posto
+     * passava 222 metri piu' in la', su un'altra via: i pallini restavano su via
+     * Bolzano e la scia saliva per via Artigiani. La lettura sara' anche
+     * imprecisa, ma non di duecento metri: si accetta il doppio della sua
+     * incertezza, e mai meno di ottanta metri. Piu' lontano di cosi' la fusione
+     * non si fa, e restano le due tratte, che almeno toccano la lettura.
+     */
+    const lontano = Math.max(80, (Number(uno.b[3]) || 0) * 2);
+    let vicino = Infinity;
+    for (const c of via) vicino = Math.min(vicino, mappaDistanza(c, uno.b));
+    if (vicino > lontano) continue;
     fare.splice(k, 2, { tipo: 'buco', a: uno.a, b: due.b, d: quanto, via: via });
   }
 

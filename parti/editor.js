@@ -65,7 +65,6 @@ const schemaSue = (D) => [
   { name: 'fermo_m', selector: { number: { min: 25, max: 500, step: 5, mode: 'slider' } } },
   { name: 'pausa_min', selector: { number: { min: 2, max: 120, step: 1, mode: 'slider' } } },
   { name: 'andata_ritorno', selector: { boolean: {} } },
-  { name: 'scia_chiara', selector: { boolean: {} } },
   { name: 'scosto', selector: { number: { min: 0, max: 50, step: 1, mode: 'slider' } } },
   { name: 'spessore', selector: { number: { min: 1, max: 12, step: 1, mode: 'slider' } } },
   { name: 'alone', selector: { boolean: {} } },

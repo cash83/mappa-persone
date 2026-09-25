@@ -1,13 +1,13 @@
 import {
   MAPPA_DIM, MAPPA_MUCCHIO, MAPPA_MUCCHIO_OPACITA, MAPPA_OPACITA, MAPPA_PRINCIPALE,
   MAPPA_SFONDO_CART, MAPPA_SUE, MAPPA_VICINO, MAPPA_ZONA_SPENTA,
-} from './costanti.js?v=3.3.20';
+} from './costanti.js?v=3.3.21';
 import {
   mappaAffianca, mappaColore, mappaDistanza, mappaElenco, mappaOra, mappaRighe, mappaSalta,
   mappaSua,
-} from './utili.js?v=3.3.20';
-import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.20';
-import { parla } from './lingue.js?v=3.3.20';
+} from './utili.js?v=3.3.21';
+import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.21';
+import { parla } from './lingue.js?v=3.3.21';
 
 /**
  * LA GESTIONE DELLE ENTITA'. Qui dentro sta tutto e solo quello che riguarda
@@ -871,18 +871,6 @@ function inFilaSullaScia(mappa, linee, punti) {
     });
   });
   return fuori;
-}
-
-/** lo stesso colore ma piu' chiaro: l'andata si distingue dal ritorno */
-function casaSchiarisci(hex) {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
-  if (!m) return hex;
-  const n = parseInt(m[1], 16);
-  const su = (v) => Math.round(v + (255 - v) * 0.45);
-  const r = su((n >> 16) & 255);
-  const g = su((n >> 8) & 255);
-  const b = su(n & 255);
-  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
 /**

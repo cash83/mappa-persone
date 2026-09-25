@@ -873,18 +873,6 @@ function inFilaSullaScia(mappa, linee, punti) {
   return fuori;
 }
 
-/** lo stesso colore ma piu' chiaro: l'andata si distingue dal ritorno */
-function casaSchiarisci(hex) {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
-  if (!m) return hex;
-  const n = parseInt(m[1], 16);
-  const su = (v) => Math.round(v + (255 - v) * 0.45);
-  const r = su((n >> 16) & 255);
-  const g = su((n >> 8) & 255);
-  const b = su(n & 255);
-  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-}
-
 /**
  * Andata o ritorno si decide da CASA, non dall'ordine: chi ARRIVA a casa sta
  * tornando, chi PARTE da casa sta andando. Se non si capisce, si alternano.

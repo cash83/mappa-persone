@@ -3,7 +3,7 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.3.20';
+export const MAPPA_VERSIONE = '3.3.21';
 
 /* La versione del CALCOLO delle vie: entra nella chiave dei viaggi in dispensa.
    Si alza SOLO quando cambia il modo di ricavare la via (pulizia delle letture,
@@ -46,7 +46,6 @@ export const MAPPA_SUE = {
   fermo_m: 100,              // m: sotto questo spostamento non e' un viaggio
   pausa_min: 5,              // min: sosta che chiude un viaggio
   andata_ritorno: true,      // distingui andata e ritorno
-  scia_chiara: false,        // senza distinzione: tutte le scie sottili e chiare come l'andata
   scosto: 8,                 // px: distanza fra le due
   spessore: 4,               // px: la linea
   alone: true,               // l'alone della precisione dichiarata dal telefono

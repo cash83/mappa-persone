@@ -121,6 +121,16 @@ di righe in mezzo al cortile.
 Andata e ritorno si disegnano affiancati, ognuno sulla destra del proprio senso di marcia, con
 la propria fila di frecce, così non si accavallano nemmeno sulla stessa strada.
 
+### Le letture consegnate in ritardo
+
+Ogni tanto il telefono tiene in pancia una posizione e la manda **dopo** una più recente. Nella
+fila diventa un andirivieni — avanti, indietro, avanti — e il calcolatore, per passare da tutte
+e tre, infila cortili e stradine di servizio. La scheda la riconosce e la toglie dal calcolo,
+ma solo se è arrivata davvero **fuori cadenza**: buco lungo prima, la successiva subito dietro.
+Chi il giro l'ha fatto per davvero manda alla sua solita cadenza, e la sua scia lo segue anche
+quando torna sui propri passi. In tutti e due i casi **i pallini restano tutti**: quello che
+viene scartato è solo il suggerimento su dove far passare la linea.
+
 ---
 
 ## Tutte le impostazioni
@@ -190,6 +200,10 @@ Il cerchio della zona usa sempre il **raggio vero** impostato in Home Assistant.
 * **Giri inventati.** Abbassa `via_giro`. Troppe righe dritte invece? Alzalo.
 * **Una ragnatela di righe dove uno parcheggia.** Metti `sosta_linea` a `0`, oppure a `100`
   per un trattino solo che collega l'entrata all'uscita.
+* **La scia salta un pallino.** Se il pallino è isolato e la linea gli passa lontano, di solito
+  è una posizione arrivata in ritardo, scartata apposta (vedi sopra). Se invece i pallini
+  saltati sono in fila e descrivono una strada vera, è un problema: aprine una segnalazione
+  con l'ora, servono le letture di quel tratto.
 * **Pallini dove la persona non è mai stata.** Spegni `usa_indirizzo`: su certi telefoni il
   sensore dell'indirizzo risponde sempre con gli stessi due o tre punti fissi.
 * **Dopo un aggiornamento non cambia niente.** Ricarica con ctrl+shift+R: il browser tiene in

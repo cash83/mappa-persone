@@ -119,6 +119,16 @@ the courtyard.
 Outbound and return are drawn side by side, each on the right of its own direction of travel,
 with their own row of arrows, so the two never overlap even on the same road.
 
+### Readings delivered late
+
+Every so often a phone holds a position back and sends it **after** a newer one. In the queue
+that looks like a there-and-back — forward, back, forward — and the router, trying to visit all
+three, threads through courtyards and service lanes. The card spots it and drops it from the
+routing, but only when it really arrived **out of cadence**: a long gap before it, the next one
+right behind. Someone who genuinely doubled back reports at their usual cadence, and the trail
+follows them. Either way **every dot stays on the map**: what gets dropped is only the hint
+about where to run the line.
+
 ---
 
 ## Options
@@ -188,6 +198,10 @@ The zone circle always uses the **real radius** set in Home Assistant.
 * **Invented detours.** Lower `via_giro`. Too many straight lines instead? Raise it.
 * **A cobweb of lines where someone parks.** Set `sosta_linea` to `0`, or to `100` for a
   single short segment linking the way in to the way out.
+* **The trail skips a dot.** If the dot stands alone and the line passes well clear of it, it
+  is usually a position that arrived late and was dropped on purpose (see above). If instead
+  the skipped dots line up and describe a real road, that is a bug: open an issue with the
+  time — the readings for that stretch are what's needed.
 * **Dots where the person has never been.** Turn `usa_indirizzo` off: on some phones the
   geocoded sensor always answers with the same two or three fixed points.
 * **Nothing updates after an upgrade.** Reload with ctrl+shift+R — the browser caches the card.

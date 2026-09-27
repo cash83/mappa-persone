@@ -1,13 +1,13 @@
 import {
   MAPPA_DIM, MAPPA_MUCCHIO, MAPPA_MUCCHIO_OPACITA, MAPPA_OPACITA, MAPPA_PRINCIPALE,
   MAPPA_SFONDO, MAPPA_SUE, MAPPA_VICINO, MAPPA_ZONA_SPENTA,
-} from './costanti.js?v=3.3.23';
+} from './costanti.js?v=3.3.25';
 import {
   mappaAffianca, mappaColore, mappaDistanza, mappaElenco, mappaOra, mappaRighe, mappaSalta,
   mappaSua,
-} from './utili.js?v=3.3.23';
-import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.23';
-import { parla } from './lingue.js?v=3.3.23';
+} from './utili.js?v=3.3.25';
+import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.25';
+import { parla } from './lingue.js?v=3.3.25';
 
 /**
  * LA GESTIONE DELLE ENTITA'. Qui dentro sta tutto e solo quello che riguarda
@@ -314,12 +314,17 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
          cui sono le persone nella scheda. Anche qui c'e' un tetto in metri, cosi'
          da lontano si riavvicinano. */
       /* Il passo fra una corsia e l'altra e' lo spessore della linea piu' grossa
-         della scheda piu' due pixel: con 7 fissi, mamma (spessore 6) finiva sotto
+         della scheda piu' CORSIA_ARIA: con 7 fissi, mamma (spessore 6) finiva sotto
          le linee degli altri tre. Con piu' persone la corsia di ognuno sostituisce
-         lo scostamento suo: scostamenti diversi (8, 10, 20) mescolavano l'ordine. */
+         lo scostamento suo: scostamenti diversi (8, 10, 20) mescolavano l'ordine.
+         L'aria fra una corsia e l'altra era di due pixel soli, e con quattro
+         persone sulla stessa strada le scie si toccavano: il 27/09 "sono un po'
+         troppo vicine una dall'altra". Otto pixel di aria le staccano, e il tetto
+         in metri sale di conseguenza, se no da lontano il tetto le rincollava. */
+      const CORSIA_ARIA = 8;
       const persone = mappaRighe(config).filter((r) => !String(r.entity).startsWith('zone.'));
-      const passoCorsia = Math.max(...persone.map((r) => Number(mappaSua(r, 'spessore', MAPPA_SUE)) || 4)) + 2;
-      const PERSONA_MAX = 8;   // metri per ogni corsia, al massimo
+      const passoCorsia = Math.max(...persone.map((r) => Number(mappaSua(r, 'spessore', MAPPA_SUE)) || 4)) + CORSIA_ARIA;
+      const PERSONA_MAX = 16;   // metri per ogni corsia, al massimo
       const posto = Math.max(0, persone.map((r) => r.entity).indexOf(ent));
       let extra = 0;
       if (persone.length > 1) {

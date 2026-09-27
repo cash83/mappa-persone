@@ -47,6 +47,11 @@ const RICALCO_PREC = 40;         /* metri di precisione: una lettura piu' precis
                                     torna li' vuol dire che ci e' andata davvero */
 const TELETRASPORTO = 200;       /* km/h: sopra questa andatura non c'e' piu' un
                                     viaggio, c'e' una lettura sbagliata */
+const ROTTA_MIN = 25;            /* metri: sotto questa distanza due letture non
+                                    dicono in che direzione si stava andando -
+                                    da fermo il GPS balla e la bussola esce a caso */
+const ROTTA_APERTURA = 60;       /* gradi di tolleranza attorno alla direzione:
+                                    e' anche il valore di serie del calcolatore */
 const COSTI = {
   piedi: 'pedestrian',
   bici: 'bicycle',
@@ -185,6 +190,48 @@ async function chiedi(url, opzioni) {
 }
 
 /* ------------------------------------------------------------------ conti */
+
+/** da che parte si va da un punto all'altro, in gradi (0 = nord, 90 = est) */
+function bussola(a, b) {
+  const f1 = (a[0] * Math.PI) / 180;
+  const f2 = (b[0] * Math.PI) / 180;
+  const dl = ((b[1] - a[1]) * Math.PI) / 180;
+  const y = Math.sin(dl) * Math.cos(f2);
+  const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+  return Math.round((((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360);
+}
+
+/**
+ * IN CHE DIREZIONE ANDAVA, ai capi di un buco. Senza questo il calcolatore non
+ * sa su quale carreggiata mettere il punto, e su una strada a due carreggiate
+ * sceglie quella sbagliata: per arrivarci "legalmente" prosegue fino allo
+ * svincolo, gira e torna indietro. Il 26/09 la galleria della MeBo - 117 secondi
+ * senza una lettura, 1717 metri di buco - veniva chiesta cosi' e tornava lunga
+ * 4778 m invece di 2020: il 278% della linea d'aria, oltre il tetto del giro, e
+ * al suo posto restava una riga dritta. Con la direzione: 118%, e la scia passa
+ * nella galleria.
+ * La direzione si ricava dalle letture vicine, non dal `course` del telefono,
+ * che vale zero quando non lo sa. Al PRIMO capo del buco conta come ci e'
+ * ARRIVATA (la lettura di prima), all'ultimo come ne e' RIPARTITA (quella
+ * dopo): misurato su tutti i buchi del 26/09, 14 riprese su 17 contro 13.
+ */
+function versoDiMarcia(usati, i, ruolo) {
+  if (ruolo === 'arrivo') {
+    for (let k = i - 1; k >= 0; k--) {
+      if (mappaDistanza(usati[k], usati[i]) >= ROTTA_MIN) return bussola(usati[k], usati[i]);
+    }
+    return versoDiMarcia(usati, i, 'partenza');
+  }
+  for (let k = i + 1; k < usati.length; k++) {
+    if (mappaDistanza(usati[i], usati[k]) >= ROTTA_MIN) return bussola(usati[i], usati[k]);
+  }
+  if (ruolo === 'partenza') {
+    for (let k = i - 1; k >= 0; k--) {
+      if (mappaDistanza(usati[k], usati[i]) >= ROTTA_MIN) return bussola(usati[k], usati[i]);
+    }
+  }
+  return null;
+}
 
 function lunghezza(g) {
   let l = 0;
@@ -578,7 +625,7 @@ async function aggancia(punti, profilo) {
  * Il `radius: 30` conta e resta: senza, lo stesso tratto veniva tre volte piu'
  * lungo del vero, perche' il calcolatore partiva dalla strada sbagliata.
  */
-async function rotte(punti, profilo) {
+async function rotte(punti, profilo, bussole) {
   /*
    * IL FILTRO SULLE STRADINE. Una lettura presa male cade spesso a una ventina
    * di metri dalla strada, e li' dietro c'e' quasi sempre una corsia di
@@ -592,11 +639,21 @@ async function rotte(punti, profilo) {
    */
   const tappa = { radius: 30, type: 'break' };
   if (profilo === 'auto') tappa.search_filter = { min_road_class: 'residential' };
+  /* la direzione di marcia, dove si e' riusciti a ricavarla (vedi versoDiMarcia) */
+  const conRotta = (p, i) => {
+    const l = Object.assign({ lat: p[0], lon: p[1] }, tappa);
+    const g = bussole && bussole[i];
+    if (g !== null && g !== undefined) {
+      l.heading = g;
+      l.heading_tolerance = ROTTA_APERTURA;
+    }
+    return l;
+  };
   const r = await chiedi(indirizzo('route'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      locations: punti.map((p) => Object.assign({ lat: p[0], lon: p[1] }, tappa)),
+      locations: punti.map(conRotta),
       costing: profilo,
       directions_options: { units: 'kilometers' },
     }),
@@ -816,6 +873,12 @@ async function pezzoDaBlocco(blocco, o) {
      saltato un pezzo si chiede il percorso fra quei due punti. Le misure sono le
      stesse di sempre, non si tocca una soglia: cambia solo che i buchi uno in
      fila all'altro si chiedono in una richiesta sola invece che uno per uno. */
+  /* a che punto della traccia sta ogni lettura: serve per ricavare la direzione
+     di marcia ai capi dei buchi (versoDiMarcia) */
+  const dove = new Map();
+  usati.forEach((p, i) => dove.set(p, i));
+  const verso = (p, ruolo) => (dove.has(p) ? versoDiMarcia(usati, dove.get(p), ruolo) : null);
+
   const fare = [];
   let corsa = [usati[0]];
   /* Un ripiego nasce da due cose diverse. O il calcolatore ha RISPOSTO e la sua
@@ -924,6 +987,33 @@ async function pezzoDaBlocco(blocco, o) {
     for (const c of via) vicino = Math.min(vicino, mappaDistanza(c, uno.b));
     if (vicino > lontano) continue;
     fare.splice(k, 2, { tipo: 'buco', a: uno.a, b: due.b, d: quanto, via: via });
+  }
+
+  /*
+   * IL RIPESCAGGIO CON LA DIREZIONE DI MARCIA. Un percorso piu' lungo del tetto
+   * sta per essere buttato e al suo posto resterebbe una riga dritta: prima di
+   * arrendersi lo si richiede dicendo al calcolatore DA CHE PARTE si andava ai
+   * due capi. Su una strada a due carreggiate e' quello che gli manca: senza,
+   * mette il punto sulla carreggiata sbagliata e per arrivarci prosegue fino
+   * allo svincolo, gira e torna indietro.
+   * Si chiede solo per i buchi che verrebbero buttati - il 26/09 furono 17 su
+   * 247 - e si tiene la risposta nuova solo se sta sotto il tetto: quello che
+   * gia' funziona non si tocca, e una direzione sbagliata non puo' peggiorare
+   * niente. Su quei 17: 14 ripresi, e la galleria della MeBo da 4778 m a 2020.
+   */
+  for (const pezzo of fare) {
+    if (pezzo.tipo !== 'buco') continue;
+    const limite = pezzo.d * (o.giro / 100) + 200;
+    if (pezzo.via && lunghezza(pezzo.via) <= limite) continue;
+    const bussole = [verso(pezzo.a, 'arrivo'), verso(pezzo.b, 'partenza')];
+    if (bussole[0] === null && bussole[1] === null) continue;
+    try {
+      const g = await rotte([pezzo.a, pezzo.b], profilo, bussole);
+      const via = g && g[0];
+      if (via && lunghezza(via) <= limite) pezzo.via = via;
+    } catch (e) {
+      /* si tiene quello che c'era: al massimo resta la riga dritta */
+    }
   }
 
   const linea = [];

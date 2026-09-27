@@ -47,6 +47,10 @@ const RICALCO_PREC = 40;         /* metri di precisione: una lettura piu' precis
                                     torna li' vuol dire che ci e' andata davvero */
 const TELETRASPORTO = 200;       /* km/h: sopra questa andatura non c'e' piu' un
                                     viaggio, c'e' una lettura sbagliata */
+const GIRO_LENTO = 12;           /* km/h: per invertire il senso di marcia bisogna
+                                    fermarsi. Se nel punto in cui la scia torna
+                                    indietro non si scende sotto questa andatura,
+                                    quel dietrofront non l'ha fatto nessuno */
 const ROTTA_MIN = 25;            /* metri: sotto questa distanza due letture non
                                     dicono in che direzione si stava andando -
                                     da fermo il GPS balla e la bussola esce a caso */
@@ -731,6 +735,20 @@ const RITARDO_VOLTE = 3;
  * quella lettura non e' piu' precisa delle due vicine, si butta. Il taglio si
  * ferma a DIETRO_MAX, se no si cancellerebbe anche l'inversione di chi in fondo a
  * una via ci e' andato e poi e' tornato indietro sul serio.
+ *
+ * E si butta in DUE casi, perche' i modi di sbagliare sono due:
+ * 1. la consegna e' fuori cadenza (vedi sotto): il telefono ha tenuto in pancia
+ *    una posizione vecchia e l'ha mandata dopo una nuova;
+ * 2. l'inversione e' IMPOSSIBILE: per tornare indietro bisogna fermarsi, e se
+ *    l'andatura non scende mai sotto GIRO_LENTO nessuno ha girato niente. Il
+ *    27/09 mamma risultava fare avanti-indietro-avanti due volte in tre minuti
+ *    restando fra i 31 e i 42 km/h. Serve perche' il caso 1 spesso NON si vede:
+ *    l'app manda la posizione senza l'ora del rilevamento, quindi quello che
+ *    arriva a Home Assistant e' l'ora di ARRIVO e una lettura vecchia sembra
+ *    puntualissima.
+ * Misurato su sei giornate: le inversioni vere scendono sotto i 10 km/h (la
+ * rotonda di mattia: 25 -> 10 e poi ottanta secondi fermo), quelle impossibili
+ * restano sopra i 17.
  */
 function dietrofront(punti) {
   if (punti.length < 3) return punti;
@@ -756,7 +774,9 @@ function dietrofront(punti) {
     const prima = (((b[2] || 0) - ((punti[i - 1] || b)[2] || 0)) / 1000);
     const dopo = (((c[2] || 0) - (b[2] || 0)) / 1000);
     const inRitardo = prima >= RITARDO_MIN && prima >= dopo * RITARDO_VOLTE;
-    if (storto && inRitardo && suo >= vicine) continue;
+    const kmh = (x, y) => (mappaDistanza(x, y) / Math.max(0.5, ((y[2] || 0) - (x[2] || 0)) / 1000)) * 3.6;
+    const senzaFrenata = Math.min(kmh(a, b), kmh(b, c)) >= GIRO_LENTO;
+    if (storto && (inRitardo || senzaFrenata) && suo >= vicine) continue;
     fuori.push(b);
   }
   fuori.push(punti[punti.length - 1]);

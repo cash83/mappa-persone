@@ -1,4 +1,4 @@
-import { MAPPA_BASE, MAPPA_SFONDI, MAPPA_SFONDO, MAPPA_ZOOM } from './costanti.js?v=3.3.26';
+import { MAPPA_BASE, MAPPA_SFONDI, MAPPA_SFONDO, MAPPA_ZOOM } from './costanti.js?v=3.3.27';
 
 /**
  * LA GESTIONE DELLA MAPPA. Qui dentro sta tutto e solo quello che riguarda la

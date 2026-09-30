@@ -108,6 +108,25 @@ Every computed route then passes a brake: if it comes out much longer than the s
 (`via_giro`, default 200%), it is thrown away and a straight line is drawn instead. Better an
 honest straight line than an invented detour.
 
+Before giving up and drawing the straight line the card makes two more attempts, for that
+stretch only: it asks again telling the router **which way the person was heading** (on a dual
+carriageway this avoids the detour to the next junction), and then **as a bus** (a one-way
+street that public transport may use against the flow, a reserved lane). The answer is kept
+only if it passes the brake, so it can never make things worse.
+
+### What it costs on Stadia
+
+The **free plan** of Stadia Maps is enough (200,000 credits a month, 20 per request). That
+plan has routing only, not real trace snapping (`map_match`), so the card describes dense
+stretches as a row of waypoints too; if your plan does include snapping the card notices and
+keeps using it.
+
+A whole trip is sent as one stream, forty positions per request: an 80 km outing is about
+fifteen requests, a home-to-school run one or two. You pay **once per browser**: finished
+trips are kept for three days and reopening the map costs nothing. A trip watched while it
+happens costs about one request every five minutes. With four tracked people you stay around
+a tenth of the free plan.
+
 ### Stops, lanes and arrows
 
 ![Lanes and stops](immagini/corsie-e-soste.svg)
@@ -213,8 +232,9 @@ The zone circle always uses the **real radius** set in Home Assistant.
 * Map tiles come from Esri, so the tiles you look at are requested from them. The
   default background does NOT use the volunteer OpenStreetMap servers: those ask whoever queries them to identify itself, and a
   card running in a browser cannot.
-* The **Maps** button inside a person's popup opens a small Google map, and to do that it
-  sends Google **that person's current position**. Nothing leaves until you press it.
+* The **Map** button inside a person's popup opens a small map using the same Esri tiles, and
+  sends the position to nobody else. Only the *Open in Google Maps* link, if you press it,
+  opens Google with **that person's current position**.
 * Road snapping, when enabled, sends the **coordinates of the trail** to
   [Stadia Maps](https://stadiamaps.com), under your own account. With `aggancio: no` nothing
   ever leaves your network and trails stay straight lines.
@@ -225,8 +245,11 @@ The zone circle always uses the **real radius** set in Home Assistant.
 
 ## Credits
 
-Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, street, satellite and dark tiles © Esri.
+Street, satellite, dark and topographic tiles © Esri.
 Routing by [Valhalla](https://valhalla.readthedocs.io), served by
-[Stadia Maps](https://stadiamaps.com). Map rendering by [Leaflet](https://leafletjs.com) 1.9.4, bundled in `leaflet/` under its own BSD-2 licence.
+[Stadia Maps](https://stadiamaps.com), on data © [OpenStreetMap](https://www.openstreetmap.org/copyright)
+contributors: when snapping is on both are credited on the map itself, next to Esri.
+Map rendering by [Leaflet](https://leafletjs.com) 1.9.4, bundled in `leaflet/` under its own
+BSD-2 licence (`leaflet/LICENSE`).
 
 Released under the [MIT licence](LICENSE).

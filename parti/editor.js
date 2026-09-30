@@ -414,7 +414,7 @@ export class MappaPersoneEditor extends HTMLElement {
     const m = document.createElement('div');
     m.className = 'maniglia';
     m.setAttribute('slot', 'leading-icon');
-    m.title = 'Trascina per cambiare posizione';
+    m.title = parla(this._hass).trascina;
     m.innerHTML =
       '<svg viewBox="0 0 24 24"><path d="M7 19V17H9V19H7M11 19V17H13V19H11M15 19V17H17V19H15'
       + 'M7 15V13H9V15H7M11 15V13H13V15H11M15 15V13H17V15H15M7 11V9H9V11H7M11 11V9H13V11H11'
@@ -493,7 +493,7 @@ export class MappaPersoneEditor extends HTMLElement {
       const file = scelta.files && scelta.files[0];
       scelta.value = '';
       if (!file || !this._hass) return;
-      prendi.textContent = 'Sto caricando...';
+      prendi.textContent = parla(this._hass).stoCaricando;
       try {
         const indirizzo = await caricaFoto(this._hass, file);
         const ent = mappaRighe(this._config);
@@ -501,7 +501,7 @@ export class MappaPersoneEditor extends HTMLElement {
         this._manda(Object.assign({}, this._config, { entities: ent }));
       } catch (e) {
         console.warn('[mappa-persone] foto non caricata:', e);
-        prendi.textContent = 'Non ci sono riuscito';
+        prendi.textContent = parla(this._hass).fotoNonCaricata;
       }
     });
 

@@ -1,5 +1,5 @@
-import { mappaDistanza } from './utili.js?v=3.3.27';
-import { MAPPA_CALCOLO } from './costanti.js?v=3.3.27';
+import { mappaDistanza } from './utili.js?v=3.3.39';
+import { MAPPA_CALCOLO, MAPPA_PREC_VIA } from './costanti.js?v=3.3.39';
 
 /**
  * LA VIA SOTTO LA SCIA. E' lo schema che funzionava, rimesso com'era:
@@ -26,7 +26,15 @@ const TIENI = 60;                // quanti viaggi si conservano
 const GIORNI = 3;                // per quanti giorni
 const POSTO = 3000000;           // e in quanto spazio (caratteri, circa 3 MB)
 const STADIA = 'https://api.stadiamaps.com';
-const IN_USO = { motore: 'stadia', chiave: '' };
+const IN_USO = { motore: 'stadia', chiave: '', senzaAggancio: false };
+const TAPPA_OGNI = 150;
+const CORSA_GIRO = 125;          /* %: sui tratti FITTI il filo delle letture disegna
+                                    gia' la strada, quindi il percorso deve stargli
+                                    vicino - non il 200% dei buchi. Con fette da
+                                    quaranta tappe un giro dell'isolato da 1,5 km
+                                    dentro un'andata da 2,6 stava sotto il 200%
+                                    (157%) e passava; sotto il 125% non passa. */          /* metri fra una tappa e l'altra quando i tratti
+                                    fitti si agganciano coi percorsi (vedi aggancia) */
 /* Stadia serve Valhalla, ma l'aggancio la' si chiama `map_match`, non
    `trace_route`: con quel nome risponde 404. */
 function indirizzo(servizio) {
@@ -34,10 +42,13 @@ function indirizzo(servizio) {
   return STADIA + '/' + nome + '/v1?api_key=' + encodeURIComponent(IN_USO.chiave);
 }
 const PEZZO = 100;               // punti per richiesta di aggancio
-const TAPPE = 10;                /* quante tappe accetta il server pubblico in una
-                                    richiesta sola: dieci, cioe' NOVE tratte in un
-                                    colpo. Misurato: oltre risponde
-                                    "Exceeded max locations: 10". */
+const TAPPE = 40;                /* quante tappe in una richiesta sola. Il Valhalla
+                                    pubblico ne accettava dieci ("Exceeded max
+                                    locations: 10"); Stadia ne ha accettate 47 in
+                                    una prova del 29/09/2026, e ogni richiesta
+                                    costa venti crediti QUALUNQUE sia il numero di
+                                    tappe: quaranta, con margine, vuol dire
+                                    quattro volte meno richieste sui tratti fitti. */
 const SFOLTISCI = 25;            // metri: sotto questa distanza la lettura non aggiunge niente
 const FERMO = 1;                 // km/h: sotto questa andatura e' il GPS che balla da fermo
 const RICALCO = 10;              // metri: sotto questo due punti sono lo stesso posto
@@ -170,7 +181,35 @@ function ricorda(chiave, pezzo) {
    Adesso dopo un rifiuto tutta la fila si ferma e si riprova fino a quattro
    volte, aspettando sempre di piu' (o quanto dice il server). Il percorso che
    ne esce e' identico: cambia solo che arriva, e quindi si conserva. */
+/*
+ * LA STESSA DOMANDA NON SI RIFA'. Il viaggio IN CORSO cambia a ogni rilettura
+ * dei cinque minuti (finisce un po' piu' avanti), e la sua chiave in dispensa
+ * cambia con lui: fino al 29/09 si ricalcolava TUTTO da capo ogni volta - con la
+ * mappa aperta mentre uno guida, un'ora di viaggio erano dodici ricalcoli dello
+ * stesso viaggio, e ogni richiesta costa venti crediti. Ma le richieste che
+ * compongono un viaggio sono le stesse di cinque minuti prima, tranne l'ultima:
+ * la fila delle tappe parte sempre dall'inizio, quindi i pezzi gia' chiesti
+ * hanno la stessa identica domanda. Qui si ricordano le RISPOSTE, domanda per
+ * domanda, per tutta la vita della pagina: al giro dopo esce di casa solo la
+ * coda nuova. Si ricorda solo cio' che e' andato a buon fine (un rifiuto non e'
+ * una risposta), e non piu' di RISPOSTE_MAX per non gonfiare la memoria.
+ */
+const RISPOSTE = new Map();
+const RISPOSTE_MAX = 400;
+
 async function chiedi(url, opzioni) {
+  const domanda = url + '\n' + ((opzioni && opzioni.body) || '');
+  if (RISPOSTE.has(domanda)) {
+    return new Response(RISPOSTE.get(domanda), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
+  const r = await chiediDavvero(url, opzioni);
+  const testo = await r.text();
+  if (RISPOSTE.size >= RISPOSTE_MAX) RISPOSTE.delete(RISPOSTE.keys().next().value);
+  RISPOSTE.set(domanda, testo);
+  return new Response(testo, { status: 200, headers: { 'Content-Type': 'application/json' } });
+}
+
+async function chiediDavvero(url, opzioni) {
   let attesa = 1500;
   for (let prova = 0; prova < 5; prova++) {
     const passa = Date.now() - CODA.quando;
@@ -561,7 +600,7 @@ function sbalzi(punti) {
  * Si tolgono dal CALCOLO (i pallini restano tutti) quelle oltre PREC_VIA metri,
  * ma mai la prima e l'ultima, e mai se ne resterebbero meno di due.
  */
-const PREC_VIA = 60;
+const PREC_VIA = MAPPA_PREC_VIA;
 function senzaImprecise(punti) {
   const fuori = punti.filter((p, i) => i === 0 || i === punti.length - 1
     || !(Number(p[3]) > PREC_VIA));
@@ -588,7 +627,215 @@ function sfoltisci(grezzi) {
 /* -------------------------------------------------------- le due richieste */
 
 /** la traccia agganciata alla via, a pezzi da cento punti */
-async function aggancia(punti, profilo) {
+async function aggancia(punti, profilo, giro) {
+  if (IN_USO.senzaAggancio) return agganciaConPercorsi(punti, profilo, giro);
+  try {
+    return await agganciaConTraccia(punti, profilo);
+  } catch (e) {
+    /* IL PIANO GRATUITO NON HA L'AGGANCIO. Dal 29/09/2026 Stadia risponde 403
+       a `map_match` ("Account does not have access to this endpoint"): i primi
+       quattordici giorni di un account nuovo sono una prova del piano
+       Professional con tutte le API, poi si resta sul gratuito, che ha solo i
+       percorsi. La scheda funzionava e un giorno ha smesso, senza che nessuno
+       avesse toccato niente: i tratti fitti erano diventati corde dritte.
+       Quindi al primo 403 si passa ai percorsi per tutta la pagina: si descrive
+       il tratto come una fila di tappe di passaggio, e il calcolatore lo mette
+       sulla strada quasi come faceva l'aggancio. Misurato sul giro del 27/09:
+       pallini precisi a 8 m di mediana in tutti e due i modi, 16 richieste per
+       20 km. Chi ha un piano con l'aggancio continua a usarlo. */
+    if (!/403/.test(String(e && e.message))) throw e;
+    IN_USO.senzaAggancio = true;
+    return agganciaConPercorsi(punti, profilo, giro);
+  }
+}
+
+/**
+ * I tratti fitti descritti come tappe di passaggio, per chi non ha map_match.
+ * OGNI FETTA SI CONTROLLA DA SOLA. Una tappa "di passaggio" vieta l'inversione:
+ * il 29/09 mamma in fondo a via Cornaiano si e' girata per tornare, e la fetta
+ * di 417 metri intorno a quel punto e' tornata lunga 1736 - il giro
+ * dell'isolato per la circonvallazione e via Stazione. Il freno sul totale
+ * della corsa non l'ha preso (5,5 km contro 4,1 = 136%), perche' il giro si
+ * nascondeva dentro. Quindi il tetto si applica fetta per fetta; la fetta che
+ * sfora si richiede con tappe normali, dove l'inversione e' permessa, e se
+ * sfora ancora resta la riga fra le sue letture: al massimo si perde una fetta,
+ * non si inventa un giro.
+ */
+function tappeDiCorsa(punti) {
+  /* Le tappe si contano LUNGO LA STRADA FATTA, non in linea d'aria dall'ultima
+     tappa: dove si va e si torna (il 29/09 mamma fino al tabacchino e indietro)
+     la linea d'aria non cresce mai - il ritorno "sta vicino" alla tappa
+     precedente - e il punto piu' lontano veniva saltato: la scia si fermava
+     250 metri prima del negozio. La distanza percorsa invece cresce sempre. */
+  /* E il punto in cui si TORNA INDIETRO e' sempre una tappa, anche se cade a
+     meta' fra due: e' l'unica cosa che il calcolatore non puo' indovinare. Con
+     le tappe a 150 m il negozio - 130 m oltre l'ultima tappa dell'andata -
+     restava fuori, e la scia si girava prima. Si riconosce dalla bussola: se
+     fra il passo che arriva e quello che riparte c'e' piu' di un angolo retto e
+     mezzo, li' ci si e' girati. */
+  const tappe = [punti[0]];
+  let percorsi = 0;
+  for (let i = 1; i < punti.length - 1; i++) {
+    percorsi += mappaDistanza(punti[i - 1], punti[i]);
+    const giroSuSe = Math.abs(((bussola(punti[i - 1], punti[i]) - bussola(punti[i], punti[i + 1]) + 540) % 360) - 180) > 135;
+    if (percorsi >= TAPPA_OGNI || giroSuSe) {
+      tappe.push(punti[i]);
+      percorsi = 0;
+    }
+  }
+  if (tappe[tappe.length - 1] !== punti[punti.length - 1]) tappe.push(punti[punti.length - 1]);
+  return tappe;
+}
+
+function unisci(g) {
+  const l = [];
+  (g || []).forEach((tratta) => { if (tratta) tratta.forEach((c) => l.push(c)); });
+  return l;
+}
+
+/**
+ * UNA FETTA DI CORSA, CONTROLLATA. La via deve stare sotto il tetto del filo
+ * delle sue tappe; se sfora si richiede con tappe normali (l'inversione e'
+ * permessa), e se sfora ancora resta la riga fra le tappe.
+ */
+async function fettaBuona(fetta, profilo, linea) {
+  const tappe = fetta.map((p) => [p[0], p[1]]);
+  const filo = lunghezza(tappe);
+  const tetto = filo * (CORSA_GIRO / 100) + 100;
+  if (!linea || linea.length < 2 || lunghezza(linea) > tetto) {
+    try {
+      linea = unisci(await rotte(fetta, profilo, null, false));
+    } catch (e) {
+      linea = null;
+    }
+  }
+  /* e prima della riga, da pullman: vedi il ripescaggio dei buchi */
+  if (profilo === 'auto' && (!linea || linea.length < 2 || lunghezza(linea) > tetto)) {
+    try {
+      linea = unisci(await rotte(fetta, 'bus', null, false));
+    } catch (e) {
+      linea = null;
+    }
+  }
+  if (!linea || linea.length < 2 || lunghezza(linea) > tetto) linea = tappe;
+  return linea;
+}
+
+async function agganciaConPercorsi(punti, profilo, giro) {
+  const tappe = tappeDiCorsa(punti);
+  const fuori = [];
+  for (let i = 0; i < tappe.length - 1; i += TAPPE - 1) {
+    const fetta = tappe.slice(i, i + TAPPE);
+    if (fetta.length < 2) break;
+    let linea = null;
+    try {
+      linea = unisci(await rotte(fetta, profilo, null, true));
+    } catch (e) {
+      linea = null;
+    }
+    linea = await fettaBuona(fetta, profilo, linea);
+    linea.forEach((c) => fuori.push(c));
+  }
+  return fuori.length > 1 ? fuori : null;
+}
+
+/**
+ * IL VIAGGIO INTERO IN UN FLUSSO SOLO. Prima ogni pezzo del viaggio - un tratto
+ * fitto, un buco, un altro tratto fitto - era una richiesta a se': il 26/09
+ * mamma ne ha fatte 65 per 77 km, 34 delle quali buchi da due tappe e 28 tratti
+ * da tre o quattro. Qui si mettono tutte le tappe del viaggio in fila, i capi
+ * dei buchi come fermate (`break`) e le tappe dei tratti fitti come passaggi
+ * (`through`), e si manda TAPPE posizioni per volta. Il calcolatore risponde
+ * gia' diviso in gambe, una fra una fermata e la prossima: quindi una gamba
+ * per buco e una per tratto fitto, e ognuna passa dallo STESSO controllo di
+ * prima (tetto sui buchi con ripescaggio di direzione, tetto sui tratti fitti
+ * con richiesta a tappe normali). Cambia solo il numero di giri di rete: da 65
+ * a una decina.
+ *
+ * Se una richiesta viene bocciata in blocco (una tappa da cui non parte nessuna
+ * strada boccia tutte e quaranta) si torna a chiedere gamba per gamba, cosi'
+ * un rifiuto solo non porta via mezzo viaggio.
+ *
+ * Restituisce true se qualcosa non ha risposto: il viaggio non va in dispensa.
+ */
+async function inFlusso(fare, profilo) {
+  const flusso = [];
+  const metti = (p, seg, passaggio) => {
+    const u = flusso[flusso.length - 1];
+    if (u && u.p === p) {
+      /* la stessa lettura chiude un pezzo e apre il prossimo: e' una fermata,
+         e la gamba che parte da qui appartiene al pezzo che segue */
+      u.seg = seg;
+      u.passaggio = false;
+      return;
+    }
+    flusso.push({ p: p, seg: seg, passaggio: passaggio });
+  };
+  fare.forEach((s, k) => {
+    if (s.tipo === 'buco') {
+      metti(s.a, k, false);
+      metti(s.b, k, false);
+    } else {
+      const t = tappeDiCorsa(s.punti);
+      t.forEach((p, i) => metti(p, k, i > 0 && i < t.length - 1));
+    }
+  });
+
+  let guasto = false;
+  const gambeDi = new Map();   // pezzo -> le sue gambe, in ordine
+  for (let i = 0; i + 1 < flusso.length; i += TAPPE - 1) {
+    const fetta = flusso.slice(i, i + TAPPE);
+    const passaggi = fetta.map((t, j) => j > 0 && j < fetta.length - 1 && t.passaggio);
+    const gambe = [];
+    let da = 0;
+    for (let j = 1; j < fetta.length; j++) {
+      if (passaggi[j]) continue;
+      gambe.push({ seg: fetta[da].seg, tappe: fetta.slice(da, j + 1).map((t) => t.p), via: null });
+      da = j;
+    }
+    let g = null;
+    try {
+      g = await rotte(fetta.map((t) => t.p), profilo, null, passaggi);
+    } catch (e) {
+      g = null;
+    }
+    if (g && g.length === gambe.length) {
+      gambe.forEach((gamba, n) => { gamba.via = g[n]; });
+    } else {
+      for (const gamba of gambe) {
+        try {
+          const uno = await rotte(gamba.tappe, profilo, null, gamba.tappe.length > 2);
+          gamba.via = uno ? (gamba.tappe.length > 2 ? unisci(uno) : uno[0]) : null;
+        } catch (e) {
+          gamba.via = null;
+          guasto = true;
+        }
+      }
+    }
+    for (const gamba of gambe) {
+      if (!gambeDi.has(gamba.seg)) gambeDi.set(gamba.seg, []);
+      gambeDi.get(gamba.seg).push(gamba);
+    }
+  }
+
+  for (let k = 0; k < fare.length; k++) {
+    const s = fare[k];
+    const gambe = gambeDi.get(k) || [];
+    if (s.tipo === 'buco') {
+      s.via = gambe.length && gambe[0].via && gambe[0].via.length > 1 ? gambe[0].via : null;
+      if (!s.via) guasto = true;
+      continue;
+    }
+    const linea = [];
+    for (const gamba of gambe) {
+      (await fettaBuona(gamba.tappe, profilo, gamba.via && gamba.via.length > 1 ? gamba.via : null)).forEach((c) => linea.push(c));
+    }
+    s.via = linea.length > 1 ? linea : null;
+  }
+  return guasto;
+}
+
+async function agganciaConTraccia(punti, profilo) {
   const fuori = [];
   for (let i = 0; i < punti.length - 1; i += PEZZO - 1) {
     const fetta = punti.slice(i, i + PEZZO);
@@ -629,7 +876,7 @@ async function aggancia(punti, profilo) {
  * Il `radius: 30` conta e resta: senza, lo stesso tratto veniva tre volte piu'
  * lungo del vero, perche' il calcolatore partiva dalla strada sbagliata.
  */
-async function rotte(punti, profilo, bussole) {
+async function rotte(punti, profilo, bussole, passaggio) {
   /*
    * IL FILTRO SULLE STRADINE. Una lettura presa male cade spesso a una ventina
    * di metri dalla strada, e li' dietro c'e' quasi sempre una corsia di
@@ -646,6 +893,10 @@ async function rotte(punti, profilo, bussole) {
   /* la direzione di marcia, dove si e' riusciti a ricavarla (vedi versoDiMarcia) */
   const conRotta = (p, i) => {
     const l = Object.assign({ lat: p[0], lon: p[1] }, tappa);
+    /* una tappa "di passaggio" e' un punto per cui si transita senza fermarsi
+       ne' girarsi: e' come si descrive una traccia, non una consegna */
+    const passa = Array.isArray(passaggio) ? passaggio[i] : passaggio;
+    if (passa && i > 0 && i < punti.length - 1) l.type = 'through';
     const g = bussole && bussole[i];
     if (g !== null && g !== undefined) {
       l.heading = g;
@@ -776,7 +1027,23 @@ function dietrofront(punti) {
     const inRitardo = prima >= RITARDO_MIN && prima >= dopo * RITARDO_VOLTE;
     const kmh = (x, y) => (mappaDistanza(x, y) / Math.max(0.5, ((y[2] || 0) - (x[2] || 0)) / 1000)) * 3.6;
     const senzaFrenata = Math.min(kmh(a, b), kmh(b, c)) >= GIRO_LENTO;
-    if (storto && (inRitardo || senzaFrenata) && suo >= vicine) continue;
+    /* ...TRANNE L'ANDATA E RITORNO FATTA DAVVERO. Il 30/09 il pullman di mattia
+       scende alla rotonda in fondo a piazza Stazione, la gira a 25 km/h e
+       risale per la stessa strada: nessuna frenata, e la lettura sulla rotonda
+       (13 m di precisione) veniva buttata come inversione impossibile. Una
+       rotonda pero' si gira senza fermarsi. La differenza con la lettura
+       sballata si vede DOPO: chi e' tornato indietro davvero ripassa da dove e'
+       venuto, cioe' la lettura dopo il giro ricade su `a` e quella dopo ancora
+       e' gia' piu' indietro di `a`, verso la lettura di prima. Lo sbalzo del
+       26/09 a Bolzano tornava su `a` e poi girava a sinistra, 287 metri da
+       un'altra parte: quello resta buttato. Provata su tutte le giornate
+       registrate: cambia solo la rotonda del 30/09. */
+    const prec = fuori.length > 1 ? fuori[fuori.length - 2] : null;
+    const poi = punti[i + 2];
+    const andataERitorno = !!prec && !!poi
+      && mappaDistanza(c, a) <= 30
+      && mappaDistanza(poi, prec) + 20 < mappaDistanza(a, prec);
+    if (storto && (inRitardo || (senzaFrenata && !andataERitorno)) && suo >= vicine) continue;
     fuori.push(b);
   }
   fuori.push(punti[punti.length - 1]);
@@ -919,11 +1186,28 @@ async function pezzoDaBlocco(blocco, o) {
   }
   if (corsa.length > 1) fare.push({ tipo: 'corsa', punti: corsa });
 
+  /* Si prova l'aggancio una volta per pagina, sul primo tratto fitto: chi ha un
+     piano con `map_match` continua a usarlo, agli altri il 403 apre il flusso
+     unico (vedi inFlusso). */
+  if (!IN_USO.senzaAggancio) {
+    const prima = fare.find((s) => s.tipo === 'corsa');
+    if (prima) {
+      try {
+        await agganciaConTraccia(prima.punti, profilo);
+      } catch (e) {
+        if (/403/.test(String(e && e.message))) IN_USO.senzaAggancio = true;
+      }
+    }
+  }
+  if (IN_USO.senzaAggancio) {
+    if (await inFlusso(fare, profilo)) guasto = true;
+  }
+
   /* I buchi che si toccano - la fine di uno e' l'inizio del prossimo - stanno
      uno accanto all'altro nell'elenco: si mettono insieme, nove per volta. */
   const mucchi = [];
   let k = 0;
-  while (k < fare.length) {
+  while (k < fare.length && !IN_USO.senzaAggancio) {
     if (fare[k].tipo !== 'buco') { k += 1; continue; }
     let quanti = 1;
     while (quanti < TAPPE - 1 && fare[k + quanti] && fare[k + quanti].tipo === 'buco') quanti += 1;
@@ -1036,6 +1320,31 @@ async function pezzoDaBlocco(blocco, o) {
     }
   }
 
+  /*
+   * L'ULTIMO RIPESCAGGIO: DA PULLMAN. Il 30/09 Mattia torna da scuola in
+   * pullman e davanti alla scuola la scia tira una riga dritta di 168 metri.
+   * Quel pezzo di via Stazione e' a senso unico per le auto ma i pullman lo
+   * fanno anche al contrario (`oneway:bus=no`): da auto il calcolatore non puo'
+   * passare, propone un giro di 694 metri, e il tetto giustamente lo butta.
+   * Chiesto da pullman viene 173 metri, sulla via giusta. Si chiede solo per i
+   * buchi che stanno per diventare una riga, e si tiene solo se sta sotto il
+   * tetto: come per la direzione di marcia, non puo' peggiorare niente.
+   */
+  if (profilo === 'auto') {
+    for (const pezzo of fare) {
+      if (pezzo.tipo !== 'buco') continue;
+      const limite = pezzo.d * (o.giro / 100) + 200;
+      if (pezzo.via && lunghezza(pezzo.via) <= limite) continue;
+      try {
+        const g = await rotte([pezzo.a, pezzo.b], 'bus');
+        const via = g && g[0];
+        if (via && lunghezza(via) <= limite) pezzo.via = via;
+      } catch (e) {
+        /* resta la riga dritta */
+      }
+    }
+  }
+
   const linea = [];
   for (const pezzo of fare) {
     if (pezzo.tipo === 'buco') {
@@ -1049,11 +1358,15 @@ async function pezzoDaBlocco(blocco, o) {
     }
     const grezzi = pezzo.punti.map((q) => [q[0], q[1]]);
     let g = null;
-    try {
-      g = await aggancia(pezzo.punti, profilo);
-    } catch (e) {
-      g = null;
-      guasto = true;
+    if (IN_USO.senzaAggancio) {
+      g = pezzo.via || null;
+    } else {
+      try {
+        g = await aggancia(pezzo.punti, profilo, o.giro);
+      } catch (e) {
+        g = null;
+        guasto = true;
+      }
     }
     attacca(linea, copre(g, pezzo.punti, o.giro) ? g : grezzi);
   }

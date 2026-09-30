@@ -110,6 +110,25 @@ Ogni percorso calcolato passa poi da un freno: se viene fuori molto più lungo d
 d'aria (`via_giro`, di serie 200%) viene buttato e si disegna una riga dritta. Meglio una riga
 dritta onesta di un giro inventato.
 
+Prima di arrendersi alla riga dritta la scheda fa due tentativi in più, e solo per quel
+tratto: lo richiede dicendo **in che direzione si stava andando** (su una strada a due
+carreggiate evita il giro fino allo svincolo), e poi **come pullman** (un senso unico che i
+mezzi pubblici possono fare al contrario, una corsia riservata). La risposta si tiene solo se
+sta sotto il freno, quindi non può peggiorare niente.
+
+### Quanto costa a Stadia
+
+Basta il **piano gratuito** di Stadia Maps (200.000 crediti al mese, 20 per richiesta). Quel
+piano ha solo i percorsi e non l'aggancio vero e proprio (`map_match`), quindi la scheda
+descrive anche i tratti fitti come una fila di tappe; chi ha un piano con l'aggancio continua
+a usarlo, la scheda se ne accorge da sola.
+
+Un viaggio intero viene spedito in un flusso solo, quaranta posizioni per richiesta: un giro
+di 80 km sono una quindicina di richieste, un tragitto casa-scuola una o due. Si paga **una
+volta per browser**: i viaggi finiti restano in memoria tre giorni e riaprire la mappa non
+costa niente. Un viaggio guardato mentre succede costa circa una richiesta ogni cinque minuti.
+Con quattro persone tracciate si resta intorno a un decimo del piano gratuito.
+
 ### Soste, corsie e frecce
 
 ![Corsie e soste](immagini/corsie-e-soste.svg)
@@ -216,9 +235,10 @@ Il cerchio della zona usa sempre il **raggio vero** impostato in Home Assistant.
 * Le piastrelle della mappa arrivano da Esri, quindi quelle che guardi vengono
   chieste a loro. Il fondo di serie NON usa i server di volontari di OpenStreetMap: quelli chiedono che chi
   li interroga si faccia riconoscere, e dal browser una scheda non puo'.
-* Il tasto **Maps** dentro il cartellino di una persona apre una mappina di Google, e per
-  farlo manda a Google la **posizione di quella persona in quel momento**. Finche' non lo
-  tocchi non esce niente.
+* Il tasto **Mappa** dentro il cartellino di una persona apre una mappina con gli stessi
+  tasselli di Esri, e non manda la posizione a nessun altro. Solo il collegamento *Apri in
+  Google Maps*, se lo tocchi, apre Google con **la posizione di quella persona in quel
+  momento**.
 * L'aggancio alle strade, quando è acceso, manda le **coordinate della scia** a
   [Stadia Maps](https://stadiamaps.com), col tuo account. Con `aggancio: no` non esce niente
   dalla tua rete e le scie restano righe dritte.
@@ -229,9 +249,11 @@ Il cerchio della zona usa sempre il **raggio vero** impostato in Home Assistant.
 
 ## Ringraziamenti
 
-Dati della mappa © [OpenStreetMap](https://www.openstreetmap.org/copyright), tasselli della carta stradale, del satellite e della mappa scura © Esri.
+Tasselli della carta stradale, del satellite, della mappa scura e topografica © Esri.
 Calcolo delle strade con [Valhalla](https://valhalla.readthedocs.io), servito da
-[Stadia Maps](https://stadiamaps.com).
-Mappa disegnata con [Leaflet](https://leafletjs.com) 1.9.4, incluso in `leaflet/` con la sua licenza BSD-2.
+[Stadia Maps](https://stadiamaps.com), su dati © [OpenStreetMap](https://www.openstreetmap.org/copyright):
+quando l'aggancio è acceso tutti e due sono nominati anche sulla mappa, accanto a Esri.
+Mappa disegnata con [Leaflet](https://leafletjs.com) 1.9.4, incluso in `leaflet/` con la sua
+licenza BSD-2 (`leaflet/LICENSE`).
 
 Distribuita con [licenza MIT](LICENSE).

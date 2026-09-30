@@ -3,13 +3,13 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.3.27';
+export const MAPPA_VERSIONE = '3.3.39';
 
 /* La versione del CALCOLO delle vie: entra nella chiave dei viaggi in dispensa.
    Si alza SOLO quando cambia il modo di ricavare la via (pulizia delle letture,
    viaggi, richieste): cosi' un aggiornamento che tocca solo il disegno non butta
    via tre giorni di scie gia' calcolate. */
-export const MAPPA_CALCOLO = '3.3.27';
+export const MAPPA_CALCOLO = '3.3.38';
 
 /** dove sono i file sul box: serve per caricare Leaflet da noi, non da internet */
 export const MAPPA_BASE = '/local/community/mappa-persone/';
@@ -17,6 +17,9 @@ export const MAPPA_BASE = '/local/community/mappa-persone/';
 export const MAPPA_DIM = 40;        // quanto grande l'icona di una persona, in pixel
 export const MAPPA_OPACITA = 100;   // quanto si vede: 100 pieno, 20 quasi trasparente
 export const MAPPA_AGGANCIO = 'no';   // 'no' oppure 'stadia'
+/* metri di precisione dichiarata oltre i quali una lettura non guida la via e
+   il suo pallino si disegna vuoto: e' il GPS che balla, non un posto */
+export const MAPPA_PREC_VIA = 60;
 
 /**
  * LA VIA E I VIAGGI: le diciotto voci che stanno dentro ogni persona, coi

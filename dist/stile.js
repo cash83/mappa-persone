@@ -1,4 +1,4 @@
-import { MAPPA_ICONA_CENTRA, MAPPA_ICONA_STRATI } from './costanti.js?v=3.3.27';
+import { MAPPA_ICONA_CENTRA, MAPPA_ICONA_STRATI } from './costanti.js?v=3.3.39';
 
 /**
  * Il vestito della scheda. Va messo NELLO shadow DOM insieme a quello di
@@ -206,7 +206,8 @@ export const MAPPA_STILE = `
   .cartellino .mappina { margin-top: 8px; }
   .cartellino .telaio { border-radius: 8px; overflow: hidden; }
   .cartellino .telaio { height: 120px; }
-  .cartellino .telaio iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .cartellino .telaio .leaflet-container { width: 100%; height: 100%; background: #ddd; }
+  .cartellino .telaio .leaflet-control-attribution { font-size: 9px; padding: 0 4px; }
   /* quando il cartellino e' piu' alto della scheda, Leaflet lo fa scorrere:
      via il bordo che ci mette di suo, che sembra un errore */
   .mappa-cart .leaflet-popup-scrolled { border-bottom: none; border-top: none; }

@@ -1,12 +1,12 @@
 import {
   MAPPA_AGGANCIO, MAPPA_ORE, MAPPA_RILEGGI, MAPPA_SFONDO, MAPPA_SUE, MAPPA_ZOOM,
-} from './costanti.js?v=3.3.27';
-import { MAPPA_STILE } from './stile.js?v=3.3.27';
-import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.3.27';
-import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.3.27';
-import { agganciaStrade } from './strade.js?v=3.3.27';
-import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.3.27';
-import { parla } from './lingue.js?v=3.3.27';
+} from './costanti.js?v=3.3.39';
+import { MAPPA_STILE } from './stile.js?v=3.3.39';
+import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.3.39';
+import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.3.39';
+import { agganciaStrade } from './strade.js?v=3.3.39';
+import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.3.39';
+import { parla } from './lingue.js?v=3.3.39';
 
 /**
  * LA SCHEDA. Tiene insieme i due pezzi e parla con Home Assistant: riceve la
@@ -289,6 +289,18 @@ export class MappaPersone extends HTMLElement {
    */
   async _aggancia() {
     const motore = this._config && this._config.aggancio;
+    /* LA FIRMA. Le strade le calcola Stadia Maps sui dati di OpenStreetMap, e
+       tutti e due chiedono di essere nominati dove il risultato si vede: non
+       basta il README. Sta accanto a quella dei tasselli, e c'e' solo quando
+       l'aggancio e' acceso. */
+    const firma = this._carta && this._carta.mappa && this._carta.mappa.attributionControl;
+    const testo = '&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a> '
+      + '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+    if (firma && this._firmata !== (motore === 'stadia')) {
+      this._firmata = motore === 'stadia';
+      if (this._firmata) firma.addAttribution(testo);
+      else firma.removeAttribution(testo);
+    }
     if (motore !== 'stadia') {
       if (Object.keys(this._strade).length) {
         this._strade = {};

@@ -1,9 +1,10 @@
-import { mappaDistanza, mappaSalta } from './utili.js?v=3.3.27';
-import { parla } from './lingue.js?v=3.3.27';
+import { mappaDistanza, mappaSalta } from './utili.js?v=3.3.39';
+import { parla } from './lingue.js?v=3.3.39';
+import { MAPPA_SFONDI, MAPPA_SFONDO } from './costanti.js?v=3.3.39';
 
 /**
  * IL CARTELLINO che si apre toccando una persona: foto, nome, dove sta e da
- * quanto, e due tasti per aprire i dettagli e una mappina di Google.
+ * quanto, e due tasti per aprire i dettagli e una mappina del posto.
  *
  * Il sensore dell'indirizzo si chiama come il TELEFONO, non come la persona:
  * `person.papa` e' seguito da `device_tracker.fold_8_papa`, e il sensore e'
@@ -152,24 +153,45 @@ export function cartellino(hass, ent, st, col, cambiato, spazio, sfondo) {
   });
 
   /**
-   * La mappina di Google: `t=m` e' la carta stradale, `t=k` la foto dal
-   * satellite. Non serve nessuna chiave. Per cambiare al volo c'e' gia' il
-   * quadratino di Google in basso a sinistra, quindi qui non si mettono tasti:
-   * da quale delle due si parte lo dice l'impostazione della scheda.
+   * LA MAPPINA E' LA STESSA MAPPA GRANDE, IN PICCOLO. Prima era una pagina di
+   * Google incorporata con l'indirizzo vecchio `output=embed`, quello senza
+   * chiave: funziona, ma non e' la porta che Google chiede di usare, e su una
+   * scheda che altri installano non ci si appoggia a una porta di servizio.
+   * Adesso e' un Leaflet con lo STESSO sfondo scelto per la mappa grande - gli
+   * stessi tasselli Esri, gia' in cache perche' la mappa li ha scaricati -,
+   * nessuna chiave, nessun termine nuovo, stessa attribuzione. Il collegamento
+   * "Apri in Google Maps" qui sotto resta: e' un semplice link, e da' i nomi
+   * dei locali che una foto dal satellite non sa.
    */
   // La mappina prende l'altezza che avanza nella scheda: cosi' il cartellino ci
   // sta dentro tutto e non c'e' niente da far scorrere. Su una scheda bassa la
   // mappina si accorcia, non sparisce.
-  // sotto una certa misura Google nasconde il suo quadratino in basso a
-  // sinistra, quello per passare da stradale a satellite: non si scende
-  telaio.style.height = Math.max(170, Math.min(210, (spazio || 400) - 190)) + 'px';
+  telaio.style.height = Math.max(150, Math.min(210, (spazio || 400) - 190)) + 'px';
 
-  const mostra = (tipo) => {
+  const mostra = () => {
+    const L = window.L;
     telaio.innerHTML = '';
-    const q = document.createElement('iframe');
-    q.loading = 'lazy';
-    q.src = 'https://maps.google.com/maps?q=' + lat + ',' + lon + '&t=' + tipo + '&z=17&output=embed';
-    telaio.appendChild(q);
+    if (!L || !L.map) return;
+    const scelto = MAPPA_SFONDI.find((s) => s.chiave === sfondo) || MAPPA_SFONDI.find((s) => s.chiave === MAPPA_SFONDO) || MAPPA_SFONDI[0];
+    /* Lo zoom ci vuole tutto: tasti +/- (sul computer non c'e' altro modo
+       visibile), rotella, doppio clic e due dita. La rotella non fa scorrere la
+       pagina perche' il cartellino di Leaflet ferma gia' lo scorrimento. */
+    const piccola = L.map(telaio, {
+      zoomControl: true,
+      attributionControl: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      touchZoom: true,
+    });
+    piccola.attributionControl.setPrefix(false);
+    L.tileLayer(scelto.url, scelto.opzioni).addTo(piccola);
+    if (scelto.sopra) L.tileLayer(scelto.sopra, scelto.opzioni).addTo(piccola);
+    L.circleMarker([lat, lon], {
+      radius: 7, color: '#fff', weight: 2, fillColor: col, fillOpacity: 1,
+    }).addTo(piccola);
+    piccola.setView([lat, lon], 17);
+    // il riquadro era nascosto fino a un attimo fa: Leaflet deve rimisurarlo
+    setTimeout(() => piccola.invalidateSize(), 0);
   };
 
   map.addEventListener('click', () => {
@@ -180,7 +202,7 @@ export function cartellino(hass, ent, st, col, cambiato, spazio, sfondo) {
       det.textContent = D.cart.dettagli;
     }
     // si costruisce solo la prima volta che la si apre
-    if (!mappina.hidden && !telaio.firstChild) mostra(sfondo === 'stradale' ? 'm' : 'k');
+    if (!mappina.hidden && !telaio.firstChild) mostra();
     avvisa();
   });
   return box;

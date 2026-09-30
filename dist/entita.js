@@ -1,13 +1,13 @@
 import {
   MAPPA_DIM, MAPPA_MUCCHIO, MAPPA_MUCCHIO_OPACITA, MAPPA_OPACITA, MAPPA_PRINCIPALE,
-  MAPPA_SFONDO, MAPPA_SUE, MAPPA_VICINO, MAPPA_ZONA_SPENTA,
-} from './costanti.js?v=3.3.27';
+  MAPPA_PREC_VIA, MAPPA_SFONDO, MAPPA_SUE, MAPPA_VICINO, MAPPA_ZONA_SPENTA,
+} from './costanti.js?v=3.3.39';
 import {
   mappaAffianca, mappaColore, mappaDistanza, mappaElenco, mappaOra, mappaRighe, mappaSalta,
   mappaSua,
-} from './utili.js?v=3.3.27';
-import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.27';
-import { parla } from './lingue.js?v=3.3.27';
+} from './utili.js?v=3.3.39';
+import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.39';
+import { parla } from './lingue.js?v=3.3.39';
 
 /**
  * LA GESTIONE DELLE ENTITA'. Qui dentro sta tutto e solo quello che riguarda
@@ -473,6 +473,21 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
           const kp = 'p:' + ent + ':' + n;
           vivi.push(kp);
           const eta = sfuma ? 0.3 + (0.6 * n) / Math.max(1, mostrati.length - 1) : 0.9;
+          /* IL PALLINO VUOTO. Una lettura con piu' di MAPPA_PREC_VIA metri di
+             precisione dichiarata non guida la via (vedi strade.js), e la scia
+             non ci passa: il 29/09 nove letture da 84-150 m, fatte dentro casa,
+             stavano a 160-385 m sulla strada senza nessuna linea sotto, e
+             sembrava che la scia si fosse persa un pezzo. Disegnarle piene le
+             faceva passare per posti veri. Vuote - solo il contorno, col colore
+             della persona - si vedono ancora (ogni posizione ricevuta si vede),
+             ma si capisce a colpo d'occhio che e' il GPS che balla. */
+          const vuoto = Number(p[3]) > MAPPA_PREC_VIA;
+          /* Il contorno del pallino vuoto NON sbiadisce con l'eta': a un terzo di
+             opacita' un anello sottile si confondeva con un pallino pieno vecchio,
+             e "non e' cambiato nulla". Contorno pieno e piu' grosso, dentro niente. */
+          const stile = vuoto
+            ? { color: col, opacity: 0.95, weight: 2.5, fillColor: col, fillOpacity: 0, radius: dim / 2 }
+            : { color: '#fff', opacity: 1, weight: 1.5, fillColor: col, fillOpacity: eta, radius: dim / 2 };
           /* Col dito non esiste il "passaggio sopra", quindi l'ora si apre al
              TOCCO: sul telefono, se no, non si vedeva mai. E
              `bubblingMouseEvents: false` serve perche' il tocco non arrivi anche
@@ -486,28 +501,20 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
              restava un filo grigino che non si vedeva. Sbiadisce solo il colore
              dentro, che e' quello che racconta l'eta' della lettura. */
           const c = carta.usa(kp, () => {
-            const q = L.circleMarker(dove, {
-              radius: dim / 2,
-              weight: 1.5,
-              color: '#fff',
-              opacity: 1,
-              fillColor: col,
-              fillOpacity: eta,
+            const q = L.circleMarker(dove, Object.assign({
               bubblingMouseEvents: false,
               pane: 'pallini',
-            });
+            }, stile));
             q.on('click', () => q.openTooltip());
             return q;
           });
           c.setLatLng(dove);
-          c.setStyle({
-            color: '#fff', opacity: 1, weight: 1.5,
-            fillColor: col, fillOpacity: eta, radius: dim / 2,
-          });
+          c.setStyle(stile);
           /* Il nome sopra e l'ora sotto, come fa la scheda di serie. Con la sola
              ora, dove due persone si incrociano non si capiva di chi fosse il
              pallino che si era appena toccato. */
-          const detto = '<b>' + mappaSalta(nome) + '</b><br>' + mappaOra(p[2]);
+          const detto = '<b>' + mappaSalta(nome) + '</b><br>' + mappaOra(p[2])
+            + (vuoto ? '<br><small>&plusmn; ' + Math.round(p[3]) + ' m</small>' : '');
           if (c.getTooltip()) c.setTooltipContent(detto);
           else c.bindTooltip(detto, { direction: 'top' });
         });

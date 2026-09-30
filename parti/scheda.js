@@ -289,6 +289,18 @@ export class MappaPersone extends HTMLElement {
    */
   async _aggancia() {
     const motore = this._config && this._config.aggancio;
+    /* LA FIRMA. Le strade le calcola Stadia Maps sui dati di OpenStreetMap, e
+       tutti e due chiedono di essere nominati dove il risultato si vede: non
+       basta il README. Sta accanto a quella dei tasselli, e c'e' solo quando
+       l'aggancio e' acceso. */
+    const firma = this._carta && this._carta.mappa && this._carta.mappa.attributionControl;
+    const testo = '&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a> '
+      + '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+    if (firma && this._firmata !== (motore === 'stadia')) {
+      this._firmata = motore === 'stadia';
+      if (this._firmata) firma.addAttribution(testo);
+      else firma.removeAttribution(testo);
+    }
     if (motore !== 'stadia') {
       if (Object.keys(this._strade).length) {
         this._strade = {};

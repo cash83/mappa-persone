@@ -1,5 +1,5 @@
-import { mappaDistanza } from './utili.js?v=3.3.39';
-import { MAPPA_CALCOLO, MAPPA_PREC_VIA } from './costanti.js?v=3.3.39';
+import { mappaDistanza } from './utili.js?v=3.3.41';
+import { MAPPA_CALCOLO, MAPPA_PREC_VIA } from './costanti.js?v=3.3.41';
 
 /**
  * LA VIA SOTTO LA SCIA. E' lo schema che funzionava, rimesso com'era:
@@ -611,16 +611,27 @@ function senzaImprecise(punti) {
 function sfoltisci(grezzi) {
   const punti = grezzi.length > 2 ? dietrofront(sbalzi(gemelle(senzaImprecise(grezzi)))) : grezzi;
   const fuori = [punti[0]];
+  let daFermo = false;   // l'ultimo punto scartato lo era per l'andatura, non per la distanza
   for (let i = 1; i < punti.length; i++) {
     const u = fuori[fuori.length - 1];
     const m = mappaDistanza(u, punti[i]);
-    if (m < SFOLTISCI) continue;
+    if (m < SFOLTISCI) { daFermo = false; continue; }
     const sec = Math.max(1, ((punti[i][2] || 0) - (u[2] || 0)) / 1000);
-    if ((m / sec) * 3.6 < FERMO) continue;
+    if ((m / sec) * 3.6 < FERMO) { daFermo = true; continue; }
+    daFermo = false;
     fuori.push(punti[i]);
   }
+  /* L'ultimo punto si rimette, per non tagliare la fine del viaggio, MA NON se
+     era stato scartato per l'andatura. Il 02/10 mamma arriva in cortile alle
+     08:18, il telefono tace sette minuti e alle 08:25 manda un fix a 136 m da
+     casa (quattro posizioni identiche, via Wi-Fi): 0,99 km/h, cioe' nessuno si
+     e' mosso. Rimesso come ultima tappa, il tratto fino a li' andava descritto
+     al calcolatore, che per passare dal cortile senza inversione faceva il giro
+     del parcheggio: 391 m di scia dove non c'era nessuna posizione. Se chi si
+     e' fermato dove e' arrivato, il viaggio finisce li'; il fix resta un
+     pallino senza scia. */
   const ultimo = punti[punti.length - 1];
-  if (fuori[fuori.length - 1] !== ultimo) fuori.push(ultimo);
+  if (fuori[fuori.length - 1] !== ultimo && !daFermo) fuori.push(ultimo);
   return fuori;
 }
 
@@ -739,6 +750,52 @@ async function agganciaConPercorsi(punti, profilo, giro) {
   return fuori.length > 1 ? fuori : null;
 }
 
+const SPERONE_MAX = 250;        // metri: una deviazione chiusa piu' lunga e' un giro vero
+const SPERONE_PUNTA = 40;       /* metri: la deviazione si toglie solo se la sua punta e'
+                                   almeno cosi' lontana da dove comincia E da ogni lettura */
+
+/**
+ * GLI SPERONI SENZA LETTURE. Una tappa di passaggio che cade fuori strada - un
+ * cortile, un piazzale - il calcolatore la appoggia al vialetto piu' vicino, e
+ * siccome da una tappa di passaggio non si puo' tornare indietro, entra, gira e
+ * esce: il 02/10 mamma arriva in cortile e la scia fa il giro del parcheggio li'
+ * sotto, 391 m dove nessuna posizione e' mai stata. Il segno e' questo: la via
+ * esce da un punto, va fino a una punta e TORNA nello stesso punto, e vicino
+ * alla punta non c'e' nessuna lettura. Una deviazione vera - il vicolo cieco in
+ * fondo a cui si e' andati davvero - ha sempre una lettura sulla punta, perche'
+ * e' la lettura che ce l'ha portata. Le rotonde restano: la punta sta sotto i
+ * quaranta metri.
+ */
+function senzaSperoni(linea, letture) {
+  if (!linea || linea.length < 4) return linea;
+  const fuori = linea.slice();
+  let i = 0;
+  while (i < fuori.length) {
+    let l = 0;
+    let chiude = -1;
+    for (let j = i + 1; j < fuori.length; j++) {
+      l += mappaDistanza(fuori[j - 1], fuori[j]);
+      if (l > SPERONE_MAX) break;
+      if (j - i >= 2 && mappaDistanza(fuori[i], fuori[j]) <= RICALCO) chiude = j;
+    }
+    if (chiude > 0) {
+      let punta = fuori[i];
+      let sporge = 0;
+      for (let k = i + 1; k < chiude; k++) {
+        const d = mappaDistanza(fuori[i], fuori[k]);
+        if (d > sporge) { sporge = d; punta = fuori[k]; }
+      }
+      const conLettura = letture.some((p) => mappaDistanza(p, punta) <= SPERONE_PUNTA);
+      if (sporge >= SPERONE_PUNTA && !conLettura) {
+        fuori.splice(i + 1, chiude - i);
+        continue;
+      }
+    }
+    i += 1;
+  }
+  return fuori;
+}
+
 /**
  * IL VIAGGIO INTERO IN UN FLUSSO SOLO. Prima ogni pezzo del viaggio - un tratto
  * fitto, un buco, un altro tratto fitto - era una richiesta a se': il 26/09
@@ -818,6 +875,9 @@ async function inFlusso(fare, profilo) {
     }
   }
 
+  const letture = [];
+  fare.forEach((s) => { if (s.tipo === 'buco') letture.push(s.a, s.b); else s.punti.forEach((p) => letture.push(p)); });
+  gambeDi.forEach((gambe) => gambe.forEach((gamba) => { gamba.via = senzaSperoni(gamba.via, letture); }));
   for (let k = 0; k < fare.length; k++) {
     const s = fare[k];
     const gambe = gambeDi.get(k) || [];
@@ -1079,8 +1139,18 @@ function cuci(linea, pezzo) {
   return k ? pezzo.slice(k) : pezzo;
 }
 
-function attacca(linea, pezzo) {
-  const doppio = ricalco(linea, pezzo);
+function attacca(linea, pezzo, giunto) {
+  /* IL RICALCO SI TOGLIE SOLO SE LA LETTURA DI GIUNZIONE E' IMPRECISA. E' nato
+     per la lettura presa male, cento metri piu' in la' sulla stessa strada: con
+     quaranta metri di precisione, succede. Ma il 02/10 Mattia esce da scuola,
+     va 427 m in fondo a via Caldaro, UNA lettura precisa a 8 m, e torna
+     indietro: andata e ritorno veri, due pezzi che si ricalcano per forza, e il
+     taglio gli mangiava 250 m - la scia si fermava a meta' strada mentre i
+     pallini stavano in fondo. Mamma, con le letture fitte, non lo subiva: il
+     suo era un tratto solo. Stessa soglia della fusione (RICALCO_PREC): una
+     lettura precisa sta dove dice, e il va e torna e' successo davvero. */
+  const sospetta = !giunto || (Number(giunto[3]) || 0) > RICALCO_PREC;
+  const doppio = sospetta ? ricalco(linea, pezzo) : 0;
   if (doppio) linea.length -= doppio;
   cuci(linea, doppio ? pezzo.slice(doppio) : pezzo).forEach((c) => {
     const u = linea[linea.length - 1];
@@ -1353,7 +1423,7 @@ async function pezzoDaBlocco(blocco, o) {
       const limite = pezzo.d * (o.giro / 100) + 200;
       attacca(linea, pezzo.via && lunghezza(pezzo.via) <= limite
         ? pezzo.via
-        : [[pezzo.a[0], pezzo.a[1]], [pezzo.b[0], pezzo.b[1]]]);
+        : [[pezzo.a[0], pezzo.a[1]], [pezzo.b[0], pezzo.b[1]]], pezzo.a);
       continue;
     }
     const grezzi = pezzo.punti.map((q) => [q[0], q[1]]);
@@ -1368,7 +1438,7 @@ async function pezzoDaBlocco(blocco, o) {
         guasto = true;
       }
     }
-    attacca(linea, copre(g, pezzo.punti, o.giro) ? g : grezzi);
+    attacca(linea, copre(g, pezzo.punti, o.giro) ? g : grezzi, pezzo.punti[0]);
   }
 
   if (linea.length < 2) return null;

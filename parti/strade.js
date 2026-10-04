@@ -551,6 +551,30 @@ function gemelle(punti) {
        RICALCO_PREC) resta la regola di prima. */
     const buone = Number(p[3]) <= RICALCO_PREC && Number(q[3]) <= RICALCO_PREC;
     const prima = fuori[fuori.length - 1];
+    /* ...MA LA GEMELLA CHE SI RIPETE UGUALE E' QUELLA FERMA. Il 03/10 mamma e'
+       gia' a 800 m da casa e il telefono infila, ogni dieci secondi, la stessa
+       identica posizione di casa (stesse coordinate al decimillesimo, stessa
+       precisione: un fix Wi-Fi rimasto in pancia) in mezzo alle letture vere.
+       Erano tutte e due "buone", quindi si tenevano entrambe, e lo sbalzo non
+       le isolava perche' arrivavano a coppie: la scia tornava a casa e
+       ripartiva due volte, giri da 900 e 1500 m. Una posizione VERA non si
+       ripete identica a distanza di secondi mentre si e' in marcia; quella
+       che ha una copia esatta entro mezzo minuto e' la ferma, e si butta. */
+    const copia = (x, k) => {
+      for (let j = Math.max(0, k - 12); j < Math.min(punti.length, k + 12); j++) {
+        const y = punti[j];
+        if (y === x || Math.abs((y[2] || 0) - (x[2] || 0)) > 30000) continue;
+        if (y[0] === x[0] && y[1] === x[1] && y[3] === x[3]) return true;
+      }
+      return false;
+    };
+    const pCopia = copia(p, i);
+    const qCopia = copia(q, i + 1);
+    if (pCopia !== qCopia) {
+      fuori.push(pCopia ? q : p);
+      i += 2;
+      continue;
+    }
     if (buone && prima) {
       if (mappaDistanza(prima, q) < mappaDistanza(prima, p)) fuori.push(q, p);
       else fuori.push(p, q);
@@ -750,9 +774,21 @@ async function agganciaConPercorsi(punti, profilo, giro) {
   return fuori.length > 1 ? fuori : null;
 }
 
-const SPERONE_MAX = 250;        // metri: una deviazione chiusa piu' lunga e' un giro vero
+const SPERONE_MAX = 600;        // metri: una deviazione chiusa piu' lunga e' un giro vero
 const SPERONE_PUNTA = 40;       /* metri: la deviazione si toglie solo se la sua punta e'
                                    almeno cosi' lontana da dove comincia E da ogni lettura */
+const SPERONE_RIENTRO = 60;     /* metri: la deviazione puo' rientrare sulla via anche un
+                                   po' piu' avanti di dove e' uscita (il triangolo del
+                                   03/10 a Cornaiano rientrava 46 m dopo, 520 m di giro
+                                   per via Molino e via del Capitello senza una lettura),
+                                   purche' sia lunga almeno il triplo di quel salto */
+const SPERONE_VICINA = 60;      /* metri: la deviazione si tiene se una lettura del viaggio
+                                   sta entro questa distanza dalla sua punta. Sessanta e
+                                   non quaranta: in fondo a via Caldaro (02/10) la lettura
+                                   stava nel parcheggio, 52 m fuori dalla strada, e a 40
+                                   l'andata e ritorno vera veniva tolta. Il parcheggio
+                                   sotto casa (66 m), Cornaiano (113 m) e il 26/09 (151 m)
+                                   restano fuori. Misurato, non scelto. */
 
 /**
  * GLI SPERONI SENZA LETTURE. Una tappa di passaggio che cade fuori strada - un
@@ -776,7 +812,9 @@ function senzaSperoni(linea, letture) {
     for (let j = i + 1; j < fuori.length; j++) {
       l += mappaDistanza(fuori[j - 1], fuori[j]);
       if (l > SPERONE_MAX) break;
-      if (j - i >= 2 && mappaDistanza(fuori[i], fuori[j]) <= RICALCO) chiude = j;
+      if (j - i < 2) continue;
+      const salto = mappaDistanza(fuori[i], fuori[j]);
+      if (salto <= RICALCO || (salto <= SPERONE_RIENTRO && l >= Math.max(100, salto * 3))) chiude = j;
     }
     if (chiude > 0) {
       let punta = fuori[i];
@@ -785,9 +823,13 @@ function senzaSperoni(linea, letture) {
         const d = mappaDistanza(fuori[i], fuori[k]);
         if (d > sporge) { sporge = d; punta = fuori[k]; }
       }
-      const conLettura = letture.some((p) => mappaDistanza(p, punta) <= SPERONE_PUNTA);
+      const conLettura = letture.some((p) => mappaDistanza(p, punta) <= SPERONE_VICINA);
       if (sporge >= SPERONE_PUNTA && !conLettura) {
-        fuori.splice(i + 1, chiude - i);
+        /* si tolgono i vertici in mezzo; se il rientro e' piu' avanti resta
+           anche il punto di rientro, e i due si uniscono con un tratto dritto
+           di al massimo SPERONE_RIENTRO metri sulla stessa via */
+        const tieniRientro = mappaDistanza(fuori[i], fuori[chiude]) > RICALCO;
+        fuori.splice(i + 1, chiude - i - (tieniRientro ? 1 : 0));
         continue;
       }
     }

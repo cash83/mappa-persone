@@ -28,7 +28,13 @@ const POSTO = 3000000;           // e in quanto spazio (caratteri, circa 3 MB)
 const STADIA = 'https://api.stadiamaps.com';
 const IN_USO = { motore: 'stadia', chiave: '', senzaAggancio: false };
 const TAPPA_OGNI = 150;
-const CORSA_GIRO = 125;          /* %: sui tratti FITTI il filo delle letture disegna
+const CORSA_GIRO = 125;
+const CORSA_EXTRA = 150;        /* metri in piu' sul tetto di una fetta di tratto fitto.
+                                   Erano 100: il 06/10 mamma fra due letture a 97 m in
+                                   linea d'aria passa per la rotonda di via Stazione,
+                                   235 m, e il tetto era 221: la rotonda scartata per
+                                   quattordici metri. Con 150 il giro dell'isolato del
+                                   tabacchino (1736 m per 417 di filo) resta fuori. */          /* %: sui tratti FITTI il filo delle letture disegna
                                     gia' la strada, quindi il percorso deve stargli
                                     vicino - non il 200% dei buchi. Con fette da
                                     quaranta tappe un giro dell'isolato da 1,5 km
@@ -654,10 +660,52 @@ function sbalzi(punti) {
  * ma mai la prima e l'ultima, e mai se ne resterebbero meno di due.
  */
 const PREC_VIA = MAPPA_PREC_VIA;
+const COERENZA = 50;             /* metri: una lettura mezza-precisa (fra RICALCO_PREC e
+                                    PREC_VIA) guida la via solo se sta entro tanto dal
+                                    filo fra le vicine precise */
 function senzaImprecise(punti) {
   const fuori = punti.filter((p, i) => i === 0 || i === punti.length - 1
     || !(Number(p[3]) > PREC_VIA));
-  return fuori.length >= 2 ? fuori : punti;
+  if (fuori.length < 2) return punti;
+  /* LA MEZZA-PRECISA DEVE ESSERE COERENTE CON LE VICINE. Il 06/10 mamma riparte
+     dal casello di Bolzano Sud con una lettura da 52 m presa sotto la pensilina,
+     150 m piu' a est della strada: sotto il limite dei 60, quindi tenuta, e il
+     viaggio ripartiva in mezzo ai capannoni con le rette per tornare sulla via.
+     Abbassare il limite a 40 butterebbe 49 letture buone per toglierne 6
+     (misurato su 102 viaggi). Quindi: fra 41 e 60 m si tiene solo se sta entro
+     COERENZA metri dal filo che unisce le vicine precise; se ne e' lontana e'
+     un pallino vuoto, come quelle oltre i 60. I capi del viaggio restano. */
+  const precisa = (p) => !(Number(p[3]) > RICALCO_PREC);
+  const dalFilo = (p, a, b) => {
+    const ab = mappaDistanza(a, b);
+    if (ab < 1) return mappaDistanza(p, a);
+    const k = Math.cos((a[0] * Math.PI) / 180);
+    const ax = (b[1] - a[1]) * k;
+    const ay = b[0] - a[0];
+    const px = (p[1] - a[1]) * k;
+    const py = p[0] - a[0];
+    const t = Math.max(0, Math.min(1, (px * ax + py * ay) / (ax * ax + ay * ay)));
+    return mappaDistanza(p, [a[0] + t * ay, a[1] + (t * ax) / k]);
+  };
+  const tenute = fuori.filter((p, i) => {
+    if (precisa(p)) return true;
+    /* Anche i capi: al casello la lettura da 52 m era il PRIMO punto del
+       viaggio (l'ultimo della sosta), e i capi passavano senza controllo. Un
+       capo impreciso si tiene solo se la lettura precisa piu' vicina sta
+       entro COERENZA piu' la sua precisione: cosi' il viaggio riparte dalla
+       prima lettura buona invece che dai capannoni. */
+    if (i === 0 || i === fuori.length - 1) {
+      const vicina = fuori.find((q, j) => j !== i && precisa(q) && mappaDistanza(p, q) <= COERENZA + Number(p[3]));
+      return !!vicina || !fuori.some((q, j) => j !== i && precisa(q));
+    }
+    let a = i - 1;
+    while (a > 0 && !precisa(fuori[a])) a -= 1;
+    let b = i + 1;
+    while (b < fuori.length - 1 && !precisa(fuori[b])) b += 1;
+    if (!precisa(fuori[a]) || !precisa(fuori[b])) return true;
+    return dalFilo(p, fuori[a], fuori[b]) <= COERENZA;
+  });
+  return tenute.length >= 2 ? tenute : fuori;
 }
 
 /** una lettura ogni venticinque metri, e niente di quello che manda da fermo */
@@ -765,7 +813,7 @@ function unisci(g) {
 async function fettaBuona(fetta, profilo, linea) {
   const tappe = fetta.map((p) => [p[0], p[1]]);
   const filo = lunghezza(tappe);
-  const tetto = filo * (CORSA_GIRO / 100) + 100;
+  const tetto = filo * (CORSA_GIRO / 100) + CORSA_EXTRA;
   if (!linea || linea.length < 2 || lunghezza(linea) > tetto) {
     try {
       linea = unisci(await rotte(fetta, profilo, null, false));

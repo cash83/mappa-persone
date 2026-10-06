@@ -66,7 +66,7 @@ Un esempio più completo:
 ```yaml
 type: custom:mappa-persone
 ore: 12                 # quante ore di scia mostrare
-sfondo: stradale        # sfondo della mappa
+sfondo: satellite       # sfondo della mappa
 ingrandimento: 16       # quanto può stringere quando si inquadra da sola
 aggancio: stadia        # chi calcola le strade: no | stadia
 stadia_chiave: xxx      # la chiave di Stadia Maps, se l'aggancio e' acceso
@@ -161,10 +161,10 @@ viene scartato è solo il suggerimento su dove far passare la linea.
 |---|---|---|
 | `entities` | — | L'elenco di persone, tracciatori e zone da disegnare |
 | `ore` | `12` | Quante ore di scia mostrare. `0` = solo dove sono adesso |
-| `sfondo` | `stradale` | `stradale`, `scuro`, `satellite`, `topografico` |
+| `sfondo` | `satellite` | `stradale`, `scuro`, `satellite`, `topografico` |
 | `ingrandimento` | `16` | Quanto può stringere quando si inquadra da sola |
 | `gruppo_opacita` | `100` | Quanto si vede il pallino di gruppo |
-| `aggancio` | `no` | Chi calcola le strade: `no` oppure `stadia`. Vale per tutti |
+| `aggancio` | `stadia` | Chi calcola le strade: `no` oppure `stadia`. Vale per tutti. Senza chiave restano le righe dritte |
 | `stadia_chiave` | — | La chiave di [Stadia Maps](https://stadiamaps.com), gratuita per uso non commerciale |
 
 ### Di ogni persona o tracciatore
@@ -189,7 +189,7 @@ viene scartato è solo il suggerimento su dove far passare la linea.
 | `frecce_colore` | bianco | Colore delle frecce |
 | `pallini` | `true` | Segna ogni posizione ricevuta |
 | `pallini_dim` | `9` | Grandezza dei pallini |
-| `passo_pallini` | `0` | Tieni i pallini distanti almeno (m). `0` = tutti |
+| `passo_pallini` | `10` | Tieni i pallini distanti almeno (m). `0` = tutti |
 | `sosta_linea` | `0` | Linea dentro le soste (m). `0` = nessuna, `100` = un trattino |
 | `sfuma` | `true` | Sbiadisci le parti più vecchie |
 

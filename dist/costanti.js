@@ -3,20 +3,23 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.3.43';
+export const MAPPA_VERSIONE = '3.3.46';
 
 /* La versione del CALCOLO delle vie: entra nella chiave dei viaggi in dispensa.
    Si alza SOLO quando cambia il modo di ricavare la via (pulizia delle letture,
    viaggi, richieste): cosi' un aggiornamento che tocca solo il disegno non butta
    via tre giorni di scie gia' calcolate. */
-export const MAPPA_CALCOLO = '3.3.43';
+export const MAPPA_CALCOLO = '3.3.45';
 
 /** dove sono i file sul box: serve per caricare Leaflet da noi, non da internet */
 export const MAPPA_BASE = '/local/community/mappa-persone/';
 
 export const MAPPA_DIM = 40;        // quanto grande l'icona di una persona, in pixel
 export const MAPPA_OPACITA = 100;   // quanto si vede: 100 pieno, 20 quasi trasparente
-export const MAPPA_AGGANCIO = 'no';   // 'no' oppure 'stadia'
+export const MAPPA_AGGANCIO = 'stadia';   /* 'no' oppure 'stadia'. Di serie 'stadia': la
+                                             scia sulle strade e' il motivo della scheda, e
+                                             senza chiave non si rompe niente, restano le
+                                             righe fra i punti finche' non la si mette */
 /* metri di precisione dichiarata oltre i quali una lettura non guida la via e
    il suo pallino si disegna vuoto: e' il GPS che balla, non un posto */
 export const MAPPA_PREC_VIA = 60;
@@ -55,7 +58,7 @@ export const MAPPA_SUE = {
   frecce_colore: '',         // vuoto = bianche, se no il colore scelto
   pallini: true,             // segna le posizioni registrate
   pallini_dim: 9,            // px
-  passo_pallini: 0,          // m: 0 = tutti
+  passo_pallini: 10,         // m: 0 = tutti. Dieci: un telefono fermo ne manda centinaia sovrapposti
   pallini_sulla_scia: true,  // sposta il pallino sulla scia del suo viaggio (se vicino)
   sosta_linea: 0,            // m: la linea dentro le soste. 0 = niente linea
   sfuma: true,               // sbiadisci il piu' vecchio
@@ -88,7 +91,7 @@ export const MAPPA_VICINO = 0;
  * `maxZoom` fin dove si puo' ingrandire: mettendo solo il primo, oltre quel
  * punto la mappa diventa bianca.
  */
-export const MAPPA_SFONDO = 'stradale';        // lo sfondo della mappa, mappina del cartellino compresa
+export const MAPPA_SFONDO = 'satellite';       // lo sfondo della mappa, mappina del cartellino compresa
 
 export const MAPPA_SFONDI = [
   {

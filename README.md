@@ -64,7 +64,7 @@ A fuller example:
 ```yaml
 type: custom:mappa-persone
 ore: 12                 # hours of trail to show
-sfondo: stradale        # map background
+sfondo: satellite       # map background
 ingrandimento: 16       # how far it may zoom in when framing itself
 aggancio: stadia        # who works out the roads: no | stadia
 stadia_chiave: xxx      # your Stadia Maps key, when snapping is on
@@ -159,10 +159,10 @@ about where to run the line.
 |---|---|---|
 | `entities` | — | The list of people, trackers and zones to draw |
 | `ore` | `12` | How many hours of trail to show. `0` = only where they are now |
-| `sfondo` | `stradale` | `stradale`, `scuro`, `satellite`, `topografico` |
+| `sfondo` | `satellite` | `stradale`, `scuro`, `satellite`, `topografico` |
 | `ingrandimento` | `16` | How far it may zoom in when framing itself |
 | `gruppo_opacita` | `100` | How visible the group badge is |
-| `aggancio` | `no` | Who works out the roads: `no` or `stadia`. Applies to everyone |
+| `aggancio` | `stadia` | Who works out the roads: `no` or `stadia`. Applies to everyone. Without a key you get straight lines |
 | `stadia_chiave` | — | Your [Stadia Maps](https://stadiamaps.com) key, free for non-commercial use |
 
 ### Per person or tracker
@@ -187,7 +187,7 @@ about where to run the line.
 | `frecce_colore` | white | Arrow colour |
 | `pallini` | `true` | Mark every position received |
 | `pallini_dim` | `9` | Dot size |
-| `passo_pallini` | `0` | Keep dots at least this far apart (m). `0` = all of them |
+| `passo_pallini` | `10` | Keep dots at least this far apart (m). `0` = all of them |
 | `sosta_linea` | `0` | Line inside stops (m). `0` = none, `100` = one short segment |
 | `sfuma` | `true` | Fade the older parts |
 

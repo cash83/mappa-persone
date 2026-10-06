@@ -58,10 +58,16 @@ const RICALCO_PREC = 40;         /* metri di precisione: una lettura piu' precis
                                     torna li' vuol dire che ci e' andata davvero */
 const TELETRASPORTO = 200;       /* km/h: sopra questa andatura non c'e' piu' un
                                     viaggio, c'e' una lettura sbagliata */
-const GIRO_LENTO = 12;           /* km/h: per invertire il senso di marcia bisogna
+const GIRO_LENTO = 15;           /* km/h: per invertire il senso di marcia bisogna
                                     fermarsi. Se nel punto in cui la scia torna
                                     indietro non si scende sotto questa andatura,
                                     quel dietrofront non l'ha fatto nessuno */
+const BUCO_EXTRA = 250;          /* metri in piu' sul tetto di un buco, oltre la
+                                    percentuale: ci stanno un'inversione, l'accesso a uno
+                                    svincolo, una rotonda. Erano 200: il 06/10 papa' dalla
+                                    circonvallazione a via Cornaiano passa per la rotonda
+                                    di via Stazione, 1445 m per 622 di filo, e il tetto
+                                    era 1444. Un metro, e la scia tirava dritto. */
 const ROTTA_MIN = 25;            /* metri: sotto questa distanza due letture non
                                     dicono in che direzione si stava andando -
                                     da fermo il GPS balla e la bussola esce a caso */
@@ -363,7 +369,30 @@ function viaggiContinui(punti, fermoM, pausaMin) {
     let j = i + 1;
     while (j < punti.length && mappaDistanza(punti[i], punti[j]) <= raggio) j++;
     if (j - i > 1 && (punti[j - 1][2] || 0) - (punti[i][2] || 0) >= pausa) {
-      for (let k = i; k < j; k++) posto[k] = quale;
+      /* LA SOSTA COMINCIA DOVE CI SI FERMA, NON ALLA PRIMA LETTURA CHE LE STA
+         VICINO. La regola sopra prende come prima lettura della sosta la prima
+         da cui tutte le seguenti restano entro il raggio: con cento metri di
+         raggio e' ancora in strada - il 06/10 papa' a 96 m da casa, il 03/10
+         mamma sulla via Stazione a 64 m dal parcheggio del supermercato - e la
+         scia finiva li', perche' dentro la sosta non si disegna. Quindi, trovata
+         la sosta, se ne guarda il centro e si restituiscono al viaggio le
+         letture di testa che si stanno ancora AVVICINANDO al centro da oltre
+         `cuore` metri, e quelle di coda che se ne stanno gia' ALLONTANANDO. La
+         sosta deve restare una sosta: almeno due letture e la pausa intera, se
+         no si lascia com'era. */
+      const cuore = Math.max(25, raggio * 0.3);
+      let lat = 0;
+      let lon = 0;
+      for (let k = i; k < j; k++) { lat += punti[k][0]; lon += punti[k][1]; }
+      const centro = [lat / (j - i), lon / (j - i)];
+      let da = i;
+      let a = j;
+      while (da + 1 < a && mappaDistanza(punti[da], centro) > cuore
+        && mappaDistanza(punti[da + 1], centro) < mappaDistanza(punti[da], centro) - 10) da += 1;
+      while (a - 1 > da && mappaDistanza(punti[a - 1], centro) > cuore
+        && mappaDistanza(punti[a - 2], centro) < mappaDistanza(punti[a - 1], centro) - 10) a -= 1;
+      if (a - da < 2 || (punti[a - 1][2] || 0) - (punti[da][2] || 0) < pausa) { da = i; a = j; }
+      for (let k = da; k < a; k++) posto[k] = quale;
       quale += 1;
       i = j;
     } else {
@@ -775,8 +804,13 @@ async function agganciaConPercorsi(punti, profilo, giro) {
 }
 
 const SPERONE_MAX = 600;        // metri: una deviazione chiusa piu' lunga e' un giro vero
-const SPERONE_PUNTA = 40;       /* metri: la deviazione si toglie solo se la sua punta e'
-                                   almeno cosi' lontana da dove comincia E da ogni lettura */
+const SPERONE_PUNTA = 70;       /* metri: la deviazione si toglie solo se la sua punta e'
+                                   almeno cosi' lontana da dove comincia. Settanta, non
+                                   quaranta: il 06/10 il giro della rotonda di via Stazione
+                                   (punta a 50 m) veniva tagliato dritto quando la lettura
+                                   sulla rotonda era stata scartata dai filtri. Una rotonda
+                                   non e' mai una deviazione inventata, e nessuna qui
+                                   intorno sporge piu' di sessanta metri. */
 const SPERONE_RIENTRO = 60;     /* metri: la deviazione puo' rientrare sulla via anche un
                                    po' piu' avanti di dove e' uscita (il triangolo del
                                    03/10 a Cornaiano rientrava 46 m dopo, 520 m di giro
@@ -857,7 +891,7 @@ function senzaSperoni(linea, letture) {
  *
  * Restituisce true se qualcosa non ha risposto: il viaggio non va in dispensa.
  */
-async function inFlusso(fare, profilo) {
+async function inFlusso(fare, profilo, letture) {
   const flusso = [];
   const metti = (p, seg, passaggio) => {
     const u = flusso[flusso.length - 1];
@@ -917,8 +951,13 @@ async function inFlusso(fare, profilo) {
     }
   }
 
-  const letture = [];
-  fare.forEach((s) => { if (s.tipo === 'buco') letture.push(s.a, s.b); else s.punti.forEach((p) => letture.push(p)); });
+  /* Le letture che fanno da prova sono TUTTE quelle del viaggio, anche quelle
+     che i filtri hanno scartato per il calcolo della via. Il 06/10 papa' e la
+     Seat passano dalla rotonda di via Stazione: la lettura sulla rotonda c'era
+     per tutti e due, ma per papa' era uno sbalzo e per la Seat un'inversione
+     senza frenata, e con le sole letture "buone" il giro della rotonda
+     risultava senza letture e veniva tagliato dritto. Una lettura scartata non
+     guida la via, ma dice lo stesso dove si e' stati. */
   gambeDi.forEach((gambe) => gambe.forEach((gamba) => { gamba.via = senzaSperoni(gamba.via, letture); }));
   for (let k = 0; k < fare.length; k++) {
     const s = fare[k];
@@ -1312,7 +1351,7 @@ async function pezzoDaBlocco(blocco, o) {
     }
   }
   if (IN_USO.senzaAggancio) {
-    if (await inFlusso(fare, profilo)) guasto = true;
+    if (await inFlusso(fare, profilo, gamba)) guasto = true;
   }
 
   /* I buchi che si toccano - la fine di uno e' l'inizio del prossimo - stanno
@@ -1385,7 +1424,7 @@ async function pezzoDaBlocco(blocco, o) {
       g = null;
     }
     const via = g && g[0];
-    if (!via || lunghezza(via) > quanto * (o.giro / 100) + 200) continue;
+    if (!via || lunghezza(via) > quanto * (o.giro / 100) + BUCO_EXTRA) continue;
     /*
      * ...MA LA STRADA NUOVA DEVE PASSARE DI LI'. Buttare la lettura di mezzo ha
      * senso solo se il pezzo unico ripassa piu' o meno dove il telefono diceva
@@ -1419,7 +1458,7 @@ async function pezzoDaBlocco(blocco, o) {
    */
   for (const pezzo of fare) {
     if (pezzo.tipo !== 'buco') continue;
-    const limite = pezzo.d * (o.giro / 100) + 200;
+    const limite = pezzo.d * (o.giro / 100) + BUCO_EXTRA;
     if (pezzo.via && lunghezza(pezzo.via) <= limite) continue;
     const bussole = [verso(pezzo.a, 'arrivo'), verso(pezzo.b, 'partenza')];
     if (bussole[0] === null && bussole[1] === null) continue;
@@ -1445,7 +1484,7 @@ async function pezzoDaBlocco(blocco, o) {
   if (profilo === 'auto') {
     for (const pezzo of fare) {
       if (pezzo.tipo !== 'buco') continue;
-      const limite = pezzo.d * (o.giro / 100) + 200;
+      const limite = pezzo.d * (o.giro / 100) + BUCO_EXTRA;
       if (pezzo.via && lunghezza(pezzo.via) <= limite) continue;
       try {
         const g = await rotte([pezzo.a, pezzo.b], 'bus');
@@ -1462,7 +1501,7 @@ async function pezzoDaBlocco(blocco, o) {
     if (pezzo.tipo === 'buco') {
       // lo stesso freno di sempre: un percorso piu' lungo del vero oltre la
       // percentuale detta piu' duecento metri si butta e resta la linea grezza
-      const limite = pezzo.d * (o.giro / 100) + 200;
+      const limite = pezzo.d * (o.giro / 100) + BUCO_EXTRA;
       attacca(linea, pezzo.via && lunghezza(pezzo.via) <= limite
         ? pezzo.via
         : [[pezzo.a[0], pezzo.a[1]], [pezzo.b[0], pezzo.b[1]]], pezzo.a);

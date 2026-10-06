@@ -13,10 +13,10 @@
  *   parti/editor.js    la finestra delle impostazioni
  */
 
-import { MAPPA_VERSIONE } from './costanti.js?v=3.3.43';
-import { MappaPersone } from './scheda.js?v=3.3.43';
-import { MappaPersoneEditor } from './editor.js?v=3.3.43';
-import { parla } from './lingue.js?v=3.3.43';
+import { MAPPA_VERSIONE } from './costanti.js?v=3.3.46';
+import { MappaPersone } from './scheda.js?v=3.3.46';
+import { MappaPersoneEditor } from './editor.js?v=3.3.46';
+import { parla } from './lingue.js?v=3.3.46';
 
 customElements.define('mappa-persone', MappaPersone);
 customElements.define('mappa-persone-editor', MappaPersoneEditor);

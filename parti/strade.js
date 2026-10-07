@@ -337,6 +337,7 @@ function decomprimi(testo) {
    mattina, a casa alle 15:04-15:08 e a Bolzano alle 16:01, e la scheda faceva un
    solo "Andata dalle 06:42 alle 16:01" disegnando strade mai percorse. */
 const SILENZIO_MAX = 30 * 60000;
+const ARRIVO_MAX = 120000;       // ms: quanto puo' durare l'avvicinamento (o l'uscita) di una sosta
 
 function viaggi(punti, fermoM, pausaMin) {
   if (punti.length < 2) return [];
@@ -393,10 +394,19 @@ function viaggiContinui(punti, fermoM, pausaMin) {
       const centro = [lat / (j - i), lon / (j - i)];
       let da = i;
       let a = j;
-      while (da + 1 < a && mappaDistanza(punti[da], centro) > cuore
-        && mappaDistanza(punti[da + 1], centro) < mappaDistanza(punti[da], centro) - 10) da += 1;
-      while (a - 1 > da && mappaDistanza(punti[a - 1], centro) > cuore
-        && mappaDistanza(punti[a - 2], centro) < mappaDistanza(punti[a - 1], centro) - 10) a -= 1;
+      /* La testa va al viaggio fino alla PRIMA lettura che entra nel cuore
+         della sosta, se ci arriva entro ARRIVO_MAX; la coda dall'ULTIMA che
+         ne esce. Non "finche' ogni passo si avvicina": il 07/10 mamma davanti
+         alla scuola aveva due letture a 85 e 90 m dal centro, una a est e una
+         a nord, e la regola passo-passo si fermava al primo passo lasciando la
+         scia 130 m prima della scuola. Il limite di tempo serve a non
+         scambiare per arrivo chi gira per venti minuti dentro i cento metri. */
+      let dentro = -1;
+      for (let k = i; k < j; k++) { if (mappaDistanza(punti[k], centro) <= cuore) { dentro = k; break; } }
+      if (dentro > i && (punti[dentro][2] || 0) - (punti[i][2] || 0) <= ARRIVO_MAX) da = dentro;
+      let ultimo = -1;
+      for (let k = j - 1; k >= da; k--) { if (mappaDistanza(punti[k], centro) <= cuore) { ultimo = k; break; } }
+      if (ultimo >= 0 && ultimo < j - 1 && (punti[j - 1][2] || 0) - (punti[ultimo][2] || 0) <= ARRIVO_MAX) a = ultimo + 1;
       if (a - da < 2 || (punti[a - 1][2] || 0) - (punti[da][2] || 0) < pausa) { da = i; a = j; }
       for (let k = da; k < a; k++) posto[k] = quale;
       quale += 1;

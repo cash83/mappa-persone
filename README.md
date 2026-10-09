@@ -173,7 +173,7 @@ about where to run the line.
 | `dim` | `40` | Icon size in pixels |
 | `opacita` | `100` | How solid the icon is |
 | `foto` | — | A photo for the icon, instead of the one from Home Assistant |
-| `profilo` | `automatico` | `automatico`, `piedi`, `bici`, `auto`, `bus` |
+| `profilo` | `automatico` | `automatico`, `piedi`, `bici`, `auto`, `bus` (with bus, walking stretches are still detected) |
 | `via_salto` | `160` | Beyond this distance (m), compute the road instead of snapping |
 | `via_giro` | `200` | How much longer (%) a computed route may be before it is rejected |
 | `usa_indirizzo` | `false` | Also use the geocoded location sensor as a source |

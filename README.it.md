@@ -175,7 +175,7 @@ viene scartato è solo il suggerimento su dove far passare la linea.
 | `dim` | `40` | Grandezza dell'icona in pixel |
 | `opacita` | `100` | Quanto è piena l'icona |
 | `foto` | — | Una foto per l'icona, al posto di quella di Home Assistant |
-| `profilo` | `automatico` | `automatico`, `piedi`, `bici`, `auto`, `bus` |
+| `profilo` | `automatico` | `automatico`, `piedi`, `bici`, `auto`, `bus` (col pullman i tratti a piedi li riconosce lo stesso) |
 | `via_salto` | `160` | Oltre questa distanza (m) calcola la strada invece di agganciare |
 | `via_giro` | `200` | Di quanto (%) può allungare un percorso calcolato prima di essere buttato |
 | `usa_indirizzo` | `false` | Usa anche il sensore dell'indirizzo come fonte |

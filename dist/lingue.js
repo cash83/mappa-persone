@@ -72,7 +72,7 @@ const IT = {
     piedi: 'A piedi',
     bici: 'In bici',
     auto: 'In auto',
-    bus: 'In autobus',
+    bus: 'In autobus (a piedi lo riconosce)',
   },
 
   etichette: {
@@ -123,7 +123,7 @@ const IT = {
     ore: "Quanto indietro nel tempo mostrare la scia. A 0 si vede solo dove sono adesso, senza nessun percorso. Piu' ore metti, piu' la scheda impiega a disegnare la prima volta.",
     gruppo_opacita: 'Quando due persone finiscono quasi nello stesso punto, le loro icone diventano un pallino solo col numero di quante sono. Qui decidi quanto si vede quel pallino: 100 pieno, 10 quasi trasparente. Toccandolo, le facce si aprono a ventaglio.',
     aggancio: "Chi calcola le strade quando la scheda deve ricostruire un pezzo di percorso. Stadia Maps e' gratuito per uso non commerciale e vuole una chiave, che si mette qui sotto. Con No non esce da casa tua nessuna richiesta, e le scie restano righe dritte fra una posizione e l'altra. Vale per tutti quelli disegnati.",
-    profilo: "Cambia le regole che il calcolatore rispetta. A piedi i sensi unici non contano, in bici quasi mai, in auto sempre; in autobus si puo' passare nelle corsie e nei piazzali riservati ai mezzi. Lasciandolo su 'Lo riconosce da solo' guarda la velocita' di ogni viaggio: fino a 7 all'ora a piedi, fino a 25 in bici, sopra in auto. Considera solo i tratti lunghi almeno 150 metri, perche' le manovre sotto casa sono lente anche in macchina.",
+    profilo: "Cambia le regole che il calcolatore rispetta. A piedi i sensi unici non contano, in bici quasi mai, in auto sempre; in autobus si puo' passare nelle corsie, nei piazzali e nei sensi unici riservati ai mezzi: scegli 'In autobus' per chi va a scuola col pullman, i tratti a piedi li riconosce lo stesso. Lasciandolo su 'Lo riconosce da solo' guarda la velocita' di ogni viaggio: fino a 7 all'ora a piedi, fino a 25 in bici, sopra in auto. Considera solo i tratti lunghi almeno 150 metri, perche' le manovre sotto casa sono lente anche in macchina.",
     via_salto: "E' la voce piu' importante di tutte, perche' decide COME viene ricostruito ogni pezzo di scia. Sotto questa distanza la scheda appoggia la traccia sulla strada; sopra, calcola il percorso da un punto all'altro. La differenza e' grossa: chi calcola un percorso rispetta sensi unici e divieti, chi appoggia la traccia no, e ogni tanto infila la scia in una stradina vietata o le fa fare il giro di una rotonda. Se vedi curve sbagliate ABBASSALA: a 120 piu' tratti vengono calcolati e la scia rispetta le regole della strada. Alzandola si risparmiano richieste ma tornano gli errori.",
     via_giro: "Il freno contro i giri inventati. Una strada vera e' sempre piu' lunga della linea d'aria, ma non il triplo: qui dici di quanto puo' allungare prima che il percorso venga buttato. A 200 accetta fino al doppio piu' duecento metri; oltre, la scheda rinuncia e tira una riga dritta. Se vedi giri assurdi abbassalo, se vedi troppe righe dritte alzalo.",
     usa_indirizzo: "Il telefono manda anche l'indirizzo su un canale suo, e dentro ci mette una coordinata. Attenzione: quella coordinata non e' dove sei, e' dove sta l'indirizzo che ha trovato, spesso il centro dell'edificio. Su certi telefoni risponde sempre con gli stessi due o tre punti fissi, che sulla mappa diventano pallini dove non sei mai stato. Accendilo solo se il tracciatore tace spesso, e controlla il risultato.",
@@ -204,7 +204,7 @@ const EN = {
     piedi: 'On foot',
     bici: 'By bike',
     auto: 'By car',
-    bus: 'By bus',
+    bus: 'By bus (walking is still detected)',
   },
 
   etichette: {
@@ -255,7 +255,7 @@ const EN = {
     ore: 'How far back in time to show the trail. At 0 you only see where they are now, with no route at all. The more hours you ask for, the longer the card takes to draw the first time.',
     gruppo_opacita: 'When two people end up almost in the same spot, their icons become a single badge with the number of them. Here you choose how visible that badge is: 100 solid, 10 nearly transparent. Tap it and the faces fan out.',
     aggancio: 'Who works out the roads when the card has to rebuild a piece of route. Stadia Maps is free for non-commercial use and needs a key, which goes in the box below. With No nothing ever leaves your home, and trails stay straight lines between one position and the next. It applies to everyone drawn.',
-    profilo: "It changes the rules the router obeys. On foot one-way streets do not count, by bike hardly ever, by car always; by bus you may use lanes and forecourts reserved for public transport. Left on 'Work it out automatically' it looks at the speed of each trip: up to 7 km/h on foot, up to 25 by bike, above that by car. It only considers stretches at least 150 metres long, because manoeuvring near home is slow even in a car.",
+    profilo: "It changes the rules the router obeys. On foot one-way streets do not count, by bike hardly ever, by car always; by bus you may use lanes, forecourts and contraflows reserved for public transport: pick 'By bus' for someone who rides the school bus, walking stretches are still detected. Left on 'Work it out automatically' it looks at the speed of each trip: up to 7 km/h on foot, up to 25 by bike, above that by car. It only considers stretches at least 150 metres long, because manoeuvring near home is slow even in a car.",
     via_salto: 'This is the most important setting of all, because it decides HOW each piece of trail is rebuilt. Below this distance the card snaps the trace onto the road; above it, it computes the route from one point to the next. The difference is big: computing a route respects one-way streets and access restrictions, snapping a trace does not, and every so often it puts the trail down a private lane or sends it around a roundabout. If you see wrong turns, LOWER IT: at 120 more stretches get computed and the trail obeys the rules of the road. Raising it saves requests but brings the errors back.',
     via_giro: 'The brake against invented detours. A real road is always longer than the straight line, but not three times longer: here you say how much longer it may be before the route is thrown away. At 200 it accepts up to twice plus two hundred metres; beyond that the card gives up and draws a straight line. If you see absurd detours lower it, if you see too many straight lines raise it.',
     usa_indirizzo: 'The phone also sends the address on a channel of its own, with a coordinate inside. Careful: that coordinate is not where you are, it is where the address it found is, often the centre of the building. On some phones it always answers with the same two or three fixed points, which show up on the map as dots where you have never been. Turn it on only if your tracker goes quiet often, and check the result.',

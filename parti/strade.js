@@ -820,7 +820,7 @@ function unisci(g) {
  * delle sue tappe; se sfora si richiede con tappe normali (l'inversione e'
  * permessa), e se sfora ancora resta la riga fra le tappe.
  */
-async function fettaBuona(fetta, profilo, linea) {
+async function fettaBuona(fetta, profilo, linea, giro) {
   const tappe = fetta.map((p) => [p[0], p[1]]);
   const filo = lunghezza(tappe);
   const tetto = filo * (CORSA_GIRO / 100) + CORSA_EXTRA;
@@ -839,6 +839,15 @@ async function fettaBuona(fetta, profilo, linea) {
       linea = null;
     }
   }
+  /* LA SECONDA CHANCE: il tetto dei buchi. Il 09/10 il pullman di Mattia
+     scende alla rotonda bassa di piazza Stazione, la gira e risale: 571 m per
+     300 di filo, e il tetto stretto delle fette (525) lo buttava per 46 metri,
+     fili fra i pallini. Una fetta che ha gia' passato il ritentativo a tappe
+     normali e sta sotto il tetto dei BUCHI (via_giro + BUCO_EXTRA, qui 850)
+     si tiene: il giro dell'isolato del tabacchino (1736 per 417) resta fuori
+     anche cosi' (1084), e gli speroni senza letture li toglie senzaSperoni. */
+  if (linea && linea.length >= 2 && lunghezza(linea) > tetto && giro
+    && lunghezza(linea) <= filo * (giro / 100) + BUCO_EXTRA) return linea;
   if (!linea || linea.length < 2 || lunghezza(linea) > tetto) linea = tappe;
   return linea;
 }
@@ -855,7 +864,7 @@ async function agganciaConPercorsi(punti, profilo, giro) {
     } catch (e) {
       linea = null;
     }
-    linea = await fettaBuona(fetta, profilo, linea);
+    linea = await fettaBuona(fetta, profilo, linea, giro);
     linea.forEach((c) => fuori.push(c));
   }
   return fuori.length > 1 ? fuori : null;
@@ -971,7 +980,7 @@ function senzaSperoni(linea, letture) {
  *
  * Restituisce true se qualcosa non ha risposto: il viaggio non va in dispensa.
  */
-async function inFlusso(fare, profilo, letture) {
+async function inFlusso(fare, profilo, letture, giro) {
   const flusso = [];
   const metti = (p, seg, passaggio) => {
     const u = flusso[flusso.length - 1];
@@ -1049,7 +1058,7 @@ async function inFlusso(fare, profilo, letture) {
     }
     const linea = [];
     for (const gamba of gambe) {
-      (await fettaBuona(gamba.tappe, profilo, gamba.via && gamba.via.length > 1 ? gamba.via : null)).forEach((c) => linea.push(c));
+      (await fettaBuona(gamba.tappe, profilo, gamba.via && gamba.via.length > 1 ? gamba.via : null, giro)).forEach((c) => linea.push(c));
     }
     s.via = linea.length > 1 ? linea : null;
   }
@@ -1109,7 +1118,15 @@ async function rotte(punti, profilo, bussole, passaggio) {
    * Vale solo per l'auto: a piedi i vialetti e i passaggi sono la strada giusta,
    * e togliere quelli sarebbe peggio del male.
    */
-  const tappa = { radius: 30, type: 'break' };
+  /* `rank_candidates: false`: tutte le strade entro il raggio valgono alla
+     pari, e il calcolatore sceglie quella che da' il percorso migliore invece
+     della PIU' VICINA alla lettura. Il 09/10 il pullman di Mattia sulla
+     circonvallazione: la lettura a 14 m di precisione veniva appoggiata alla
+     stradina parallela, e per passarci la via usciva per via Monticolo e
+     rientrava (330 m invece di 230). E' la stessa radice del triangolino allo
+     stop e del triangolo di Cornaiano: una lettura buona appoggiata alla
+     strada sbagliata fra due vicine. */
+  const tappa = { radius: 30, type: 'break', rank_candidates: false };
   if (profilo === 'auto') tappa.search_filter = { min_road_class: 'residential' };
   /* la direzione di marcia, dove si e' riusciti a ricavarla (vedi versoDiMarcia) */
   const conRotta = (p, i) => {
@@ -1393,7 +1410,18 @@ async function pezzoDaBlocco(blocco, o) {
 
   const usati = sfoltisci(gamba);
   if (usati.length < 2) return null;
-  const profilo = o.profilo === 'automatico' ? mezzo(usati) : (COSTI[o.profilo] || 'auto');
+  /* 'bus' NON e' fisso: e' "lo riconosce da solo, ma il mezzo a motore e' un
+     autobus". Il 09/10 Mattia torna da scuola in pullman per via Stazione,
+     che per le auto e' senso unico al contrario: il calcolatore da auto faceva
+     il giro per via Caldaro e via dell'Olmo, 950 m contro 460, sotto il tetto
+     e quindi accettato senza il ripescaggio da pullman. Col profilo fisso
+     'bus' invece anche i suoi tratti a piedi sarebbero stati calcolati da
+     autobus. Quindi: a piedi e in bici come sempre, e dove sarebbe 'auto'
+     e' 'bus'. */
+  const indovinato = mezzo(usati);
+  const profilo = o.profilo === 'automatico' ? indovinato
+    : o.profilo === 'bus' ? (indovinato === 'auto' ? 'bus' : indovinato)
+      : (COSTI[o.profilo] || 'auto');
 
   /* Prima si GUARDA la traccia e si segna cosa serve, poi si CHIEDE. I tratti
      dove le letture sono vicine si agganciano alla via; dove il telefono ha
@@ -1440,7 +1468,7 @@ async function pezzoDaBlocco(blocco, o) {
     }
   }
   if (IN_USO.senzaAggancio) {
-    if (await inFlusso(fare, profilo, gamba)) guasto = true;
+    if (await inFlusso(fare, profilo, gamba, o.giro)) guasto = true;
   }
 
   /* I buchi che si toccano - la fine di uno e' l'inizio del prossimo - stanno

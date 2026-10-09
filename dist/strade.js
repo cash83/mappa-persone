@@ -1,5 +1,5 @@
-import { mappaDistanza } from './utili.js?v=3.3.49';
-import { MAPPA_CALCOLO, MAPPA_PREC_VIA } from './costanti.js?v=3.3.49';
+import { mappaDistanza } from './utili.js?v=3.3.55';
+import { MAPPA_CALCOLO, MAPPA_PREC_VIA } from './costanti.js?v=3.3.55';
 
 /**
  * LA VIA SOTTO LA SCIA. E' lo schema che funzionava, rimesso com'era:
@@ -869,6 +869,9 @@ const SPERONE_PUNTA = 70;       /* metri: la deviazione si toglie solo se la sua
                                    sulla rotonda era stata scartata dai filtri. Una rotonda
                                    non e' mai una deviazione inventata, e nessuna qui
                                    intorno sporge piu' di sessanta metri. */
+const SPERONE_MICRO = 12;       /* metri: sotto questa punta un'uscita-e-rientro esatta e' sempre un
+                                   appoggio sbagliato. Dodici e non di piu': le inversioni vere in fondo
+                                   ai vicoli (via Caldaro 22 m, tabacchino 34 m) devono restare */
 const SPERONE_RIENTRO = 60;     /* metri: la deviazione puo' rientrare sulla via anche un
                                    po' piu' avanti di dove e' uscita (il triangolo del
                                    03/10 a Cornaiano rientrava 46 m dopo, 520 m di giro
@@ -899,6 +902,19 @@ function senzaSperoni(linea, letture) {
   const fuori = linea.slice();
   let i = 0;
   while (i < fuori.length) {
+    /* prima il caso micro, sul rientro PIU' VICINO: se si cercasse insieme al
+       resto, un rientro piu' lontano lo coprirebbe e il triangolino resterebbe */
+    let microFine = -1;
+    let lMicro = 0;
+    for (let j = i + 1; j < fuori.length && j <= i + 6; j++) {
+      lMicro += mappaDistanza(fuori[j - 1], fuori[j]);
+      if (lMicro > SPERONE_MICRO * 2 + 6) break;
+      if (j - i >= 2 && mappaDistanza(fuori[i], fuori[j]) <= 3) { microFine = j; break; }
+    }
+    if (microFine > 0) {
+      fuori.splice(i + 1, microFine - i);
+      continue;
+    }
     let l = 0;
     let chiude = -1;
     for (let j = i + 1; j < fuori.length; j++) {
@@ -916,6 +932,12 @@ function senzaSperoni(linea, letture) {
         if (d > sporge) { sporge = d; punta = fuori[k]; }
       }
       const conLettura = letture.some((p) => mappaDistanza(p, punta) <= SPERONE_VICINA);
+      /* IL MICRO-SPERONE: la via esce di pochi metri in una laterale e rientra
+         nello stesso identico punto. Il 09/10 mamma ferma venti secondi allo
+         stop di via San Martino: la lettura appoggiata all'imbocco di via
+         Cornaiano, sei metri dentro, e sulla mappa un triangolino. A questa
+         scala nessuna lettura puo' dire se ci e' andata davvero, e nessuno fa
+         sei metri in una laterale per tornare indietro: si toglie sempre. */
       if (sporge >= SPERONE_PUNTA && !conLettura) {
         /* si tolgono i vertici in mezzo; se il rientro e' piu' avanti resta
            anche il punto di rientro, e i due si uniscono con un tratto dritto
@@ -1289,7 +1311,16 @@ function attacca(linea, pezzo, giunto) {
      suo era un tratto solo. Stessa soglia della fusione (RICALCO_PREC): una
      lettura precisa sta dove dice, e il va e torna e' successo davvero. */
   const sospetta = !giunto || (Number(giunto[3]) || 0) > RICALCO_PREC;
-  const doppio = sospetta ? ricalco(linea, pezzo) : 0;
+  let doppio = ricalco(linea, pezzo);
+  /* ...MA UN RICALCO DI POCHI METRI SI TOGLIE SEMPRE. Il 09/10 mamma ferma
+     venti secondi allo stop di via San Martino, lettura precisa: appoggiata
+     all'imbocco di via Cornaiano, sei metri dentro, e i due pezzi entravano e
+     uscivano dalla laterale. Un va e torna vero non e' lungo sei metri. */
+  if (doppio && !sospetta) {
+    let quanto = 0;
+    for (let k = 1; k <= doppio; k++) quanto += mappaDistanza(linea[linea.length - k], linea[linea.length - k - 1]);
+    if (quanto > SPERONE_MICRO) doppio = 0;
+  }
   if (doppio) linea.length -= doppio;
   cuci(linea, doppio ? pezzo.slice(doppio) : pezzo).forEach((c) => {
     const u = linea[linea.length - 1];

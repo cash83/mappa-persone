@@ -323,14 +323,38 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
          distanti", quindi quattro: il passo fra due scie viene otto pixel, in
          mezzo ai sei di prima e ai dodici di troppo. Il tetto in metri sale
          insieme all'aria, se no da lontano rincollava le corsie. */
-      const CORSIA_ARIA = 4;
+      /* E DA OTTOBRE IL PASSO LO DECIDE `scosto`. Con piu' persone lo
+         scostamento di ognuno veniva azzerato e l'opzione nell'editor non
+         faceva niente (09/10: "ho messo mamma a 3 ma non cambia"). Adesso
+         `scosto` vuol dire la stessa cosa in tutti e due i casi: la distanza
+         in pixel fra i centri di due corsie vicine. Con piu' persone le corsie
+         devono avere tutte lo stesso passo, quindi vale il PIU' PICCOLO fra
+         quelli impostati a mano (la prima prova usava "la prima persona
+         dell'elenco": mamma era l'ultima, e non cambiava niente); se nessuno
+         lo imposta, 8, cioe' identico a prima (spessore 4 piu' quattro
+         d'aria). Mai meno dello spessore piu' uno, se no le linee si coprono. */
       const persone = mappaRighe(config).filter((r) => !String(r.entity).startsWith('zone.'));
-      const passoCorsia = Math.max(...persone.map((r) => Number(mappaSua(r, 'spessore', MAPPA_SUE)) || 4)) + CORSIA_ARIA;
-      const PERSONA_MAX = 12;   // metri per ogni corsia, al massimo
+      const spessoreMax = Math.max(...persone.map((r) => Number(mappaSua(r, 'spessore', MAPPA_SUE)) || 4));
+      const impostati = persone.map((r) => r.scosto).filter((v) => v !== undefined && v !== null && v !== '').map(Number).filter((v) => !isNaN(v));
+      const scostoScelto = impostati.length ? Math.min(...impostati) : 8;
+      const passoCorsia = Math.max(spessoreMax + 1, scostoScelto);
+      /* IL TETTO IN METRI VALE PER LA CORSIA PIU' ESTERNA, non per ogni
+         corsia. Con 12 m a corsia la quarta persona dell'elenco finiva a 42 m
+         dalla strada appena si zoomava fuori (09/10: "il viola e' troppo
+         distante dalla strada"). Da lontano le corsie si stringono tutte
+         insieme verso la strada, tenendo l'ordine e il passo uguale; da
+         vicino comandano i pixel come prima. */
+      /* UN COMANDO SOLO (09/10: "deve essere un unico comando"): il tetto in
+         metri e' il doppio dello scosto. Con 8 di serie fa 16 m, identico a
+         prima; con 3 fa 6 m. Cosi' avvicinare le corsie le avvicina da vicino
+         (pixel) e da lontano (metri) con lo stesso numero. */
+      const CORSIE_MAX = Math.max(2, scostoScelto * 2);
       const posto = Math.max(0, persone.map((r) => r.entity).indexOf(ent));
       let extra = 0;
       if (persone.length > 1) {
-        const passo = passoCorsia * metriPerPixel > PERSONA_MAX ? PERSONA_MAX / metriPerPixel : passoCorsia;
+        const esterna = persone.length - 0.5;   // in passi, la corsia piu' lontana
+        const passoMax = CORSIE_MAX / esterna / metriPerPixel;
+        const passo = Math.min(passoCorsia, passoMax);
         extra = passo / 2 + posto * passo;
         px = 0;
       }

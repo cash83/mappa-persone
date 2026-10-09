@@ -182,7 +182,7 @@ viene scartato è solo il suggerimento su dove far passare la linea.
 | `fermo_m` | `100` | Sotto questo spostamento (m) è una sosta, non un viaggio |
 | `pausa_min` | `5` | Minuti da fermo che chiudono un viaggio |
 | `andata_ritorno` | `true` | Distingui andata e ritorno |
-| `scosto` | `8` | Quanto separare (px) le due corsie |
+| `scosto` | `8` | Distanza (px) fra due corsie vicine; da lontano la corsia più esterna non supera il doppio in metri. Con più persone vale il più piccolo fra quelli impostati |
 | `spessore` | `4` | Spessore della scia |
 | `alone` | `true` | Disegna l'alone della precisione del GPS |
 | `frecce` | `true` | Frecce del senso di marcia |

@@ -180,7 +180,7 @@ about where to run the line.
 | `fermo_m` | `100` | Below this displacement (m) it is a stop, not a trip |
 | `pausa_min` | `5` | Minutes stopped that close a trip |
 | `andata_ritorno` | `true` | Tell outbound from return |
-| `scosto` | `8` | How far apart (px) to draw the two lanes |
+| `scosto` | `8` | Distance (px) between neighbouring lanes; zoomed out the outermost lane never exceeds twice that in metres. With several people the smallest value set applies |
 | `spessore` | `4` | Trail thickness |
 | `alone` | `true` | Draw the GPS accuracy halo |
 | `frecce` | `true` | Direction arrows |

@@ -1,5 +1,5 @@
-import { mappaDistanza } from './utili.js?v=3.3.60';
-import { MAPPA_CALCOLO, MAPPA_PREC_VIA } from './costanti.js?v=3.3.60';
+import { mappaDistanza } from './utili.js?v=3.3.62';
+import { MAPPA_CALCOLO, MAPPA_PREC_VIA } from './costanti.js?v=3.3.62';
 
 /**
  * LA VIA SOTTO LA SCIA. E' lo schema che funzionava, rimesso com'era:
@@ -337,7 +337,10 @@ function decomprimi(testo) {
    mattina, a casa alle 15:04-15:08 e a Bolzano alle 16:01, e la scheda faceva un
    solo "Andata dalle 06:42 alle 16:01" disegnando strade mai percorse. */
 const SILENZIO_MAX = 30 * 60000;
-const ARRIVO_MAX = 120000;       // ms: quanto puo' durare l'avvicinamento (o l'uscita) di una sosta
+const ARRIVO_MAX = 300000;       /* ms: quanto puo' durare l'avvicinamento (o l'uscita) di una sosta.
+                                    Erano 2 minuti: il 12/10 mamma parcheggia a scuola, il telefono
+                                    tace 4 minuti e poi la mette 40 m piu' avanti: la scia finiva 57 m
+                                    prima dei pallini. Cinque minuti, quanto una sosta */
 
 function viaggi(punti, fermoM, pausaMin) {
   if (punti.length < 2) return [];
@@ -353,6 +356,53 @@ function viaggi(punti, fermoM, pausaMin) {
     return tronconi.reduce((tutti, t) => tutti.concat(viaggiContinui(t, fermoM, pausaMin)), []);
   }
   return viaggiContinui(punti, fermoM, pausaMin);
+}
+
+/**
+ * LA CODA NON E' UNA SOSTA. Il 12/10 mamma davanti alla scuola avanza in fila
+ * per cinque minuti lungo via dell'Olmo, cento metri in tutto: per la regola
+ * "cinque minuti entro cento metri" era una sosta, e dentro la sosta la scia
+ * non si disegna: i pallini salivano lungo la via e la riga si fermava in
+ * fondo. Una sosta vera BALLA intorno a un punto; una coda AVANZA sempre dalla
+ * stessa parte. Quindi: se le letture, proiettate sull'asse dalla prima
+ * all'ultima, coprono piu' di CODA_MIN metri e tornano indietro quasi mai, e'
+ * una coda, e resta viaggio.
+ */
+const CODA_MIN = 60;
+function coda(punti, i, j) {
+  const a = punti[i];
+  const b = punti[j - 1];
+  const lungo = mappaDistanza(a, b);
+  if (lungo < CODA_MIN) return false;
+  const k = Math.cos((a[0] * Math.PI) / 180);
+  const ax = (b[1] - a[1]) * k;
+  const ay = b[0] - a[0];
+  const norma = Math.sqrt(ax * ax + ay * ay) || 1;
+  let prec = 0;
+  let indietro = 0;
+  let passi = 0;
+  let vicine = 0;
+  let lontane = 0;
+  for (let n = i; n < j; n++) {
+    /* le letture imprecise non contano: una da 128 m saltava avanti di 25 m e
+       tutte le buone dopo sembravano tornare indietro */
+    if (n > i && n < j - 1 && Number(punti[n][3]) > RICALCO_PREC) continue;
+    const t = (((punti[n][1] - a[1]) * k) * ax + (punti[n][0] - a[0]) * ay) / norma;
+    const metri = (t / norma) * lungo;
+    if (n > i) {
+      passi += 1;
+      if (metri < prec - 10) indietro += 1;
+      if (metri < lungo / 2) vicine += 1; else lontane += 1;
+    }
+    prec = Math.max(prec, metri);
+  }
+  /* ...e ci devono essere letture in TUTTE E DUE le meta' dell'asse, oltre
+     alla prima: una sosta che comincia con la lettura d'arrivo a cento metri
+     ha l'ultima lontana dalla prima e nessun passo indietro, ma dopo la prima
+     sono tutte in fondo. Una coda avanza a scatti: qualche lettura vicino
+     all'inizio, qualcuna verso la fine. */
+  if (vicine < 2 || lontane < 2) return false;
+  return indietro <= Math.max(1, Math.floor(passi * 0.1));
 }
 
 function viaggiContinui(punti, fermoM, pausaMin) {
@@ -375,7 +425,7 @@ function viaggiContinui(punti, fermoM, pausaMin) {
   while (i < punti.length) {
     let j = i + 1;
     while (j < punti.length && mappaDistanza(punti[i], punti[j]) <= raggio) j++;
-    if (j - i > 1 && (punti[j - 1][2] || 0) - (punti[i][2] || 0) >= pausa) {
+    if (j - i > 1 && (punti[j - 1][2] || 0) - (punti[i][2] || 0) >= pausa && !coda(punti, i, j)) {
       /* LA SOSTA COMINCIA DOVE CI SI FERMA, NON ALLA PRIMA LETTURA CHE LE STA
          VICINO. La regola sopra prende come prima lettura della sosta la prima
          da cui tutte le seguenti restano entro il raggio: con cento metri di
@@ -719,8 +769,47 @@ function senzaImprecise(punti) {
 }
 
 /** una lettura ogni venticinque metri, e niente di quello che manda da fermo */
+/**
+ * LA LETTURA FERMA IN MEZZO AL MOVIMENTO. Il telefono ogni tanto rimanda piu'
+ * volte, a distanza di secondi, la STESSA identica posizione (coordinate al
+ * decimillesimo e precisione uguali) di un posto dove era prima - casa, di
+ * solito - mentre le letture vere lo danno gia' a centinaia di metri. Il
+ * 12/10 mamma parte da casa: sette copie della lettura di casa in trenta
+ * secondi, infilate fra le letture vere a 120, 140, 280 e 400 metri. La
+ * gemella ne prende solo le coppie nello stesso secondo, lo sbalzo solo i
+ * salti sopra i 200 km/h, e quelle restavano: la scia tornava a casa e
+ * ripartiva, con un giro di 388 m su strada Colterenzio che nessuno ha fatto.
+ * Regola: se una lettura ha una copia identica entro due minuti e in mezzo ci
+ * sono almeno due letture a piu' di 100 metri, tutte le copie sono ferme e si
+ * buttano. Chi sta fermo davvero non ha letture a cento metri in mezzo.
+ */
+const FERMA_FINESTRA = 120000;
+const FERMA_LONTANO = 100;
+function ferme(punti) {
+  if (punti.length < 4) return punti;
+  const via = new Set();
+  for (let i = 0; i < punti.length; i++) {
+    if (via.has(i)) continue;
+    const p = punti[i];
+    const copie = [i];
+    for (let j = i + 1; j < punti.length && (punti[j][2] || 0) - (p[2] || 0) <= FERMA_FINESTRA; j++) {
+      const q = punti[j];
+      if (q[0] === p[0] && q[1] === p[1] && q[3] === p[3]) copie.push(j);
+    }
+    if (copie.length < 2) continue;
+    let lontane = 0;
+    for (let j = i + 1; j < copie[copie.length - 1]; j++) {
+      if (!copie.includes(j) && mappaDistanza(punti[j], p) > FERMA_LONTANO) lontane += 1;
+    }
+    if (lontane >= 2) copie.forEach((k) => via.add(k));
+  }
+  if (!via.size) return punti;
+  const fuori = punti.filter((p, i) => !via.has(i));
+  return fuori.length >= 2 ? fuori : punti;
+}
+
 function sfoltisci(grezzi) {
-  const punti = grezzi.length > 2 ? dietrofront(sbalzi(gemelle(senzaImprecise(grezzi)))) : grezzi;
+  const punti = grezzi.length > 2 ? dietrofront(sbalzi(gemelle(senzaImprecise(ferme(grezzi))))) : grezzi;
   const fuori = [punti[0]];
   let daFermo = false;   // l'ultimo punto scartato lo era per l'andatura, non per la distanza
   for (let i = 1; i < punti.length; i++) {

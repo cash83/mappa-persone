@@ -870,6 +870,10 @@ async function agganciaConPercorsi(punti, profilo, giro) {
   return fuori.length > 1 ? fuori : null;
 }
 
+const RACCORDO_MIN = 15;        /* metri: sotto questo due gambe consecutive si considerano attaccate,
+                                   sopra si chiede il raccordo. Tutti i raccordi di una richiesta si
+                                   chiedono INSIEME, in una richiesta sola: a una per raccordo erano 7
+                                   in due viaggi di papa' */
 const SPERONE_MAX = 600;        // metri: una deviazione chiusa piu' lunga e' un giro vero
 const SPERONE_PUNTA = 70;       /* metri: la deviazione si toglie solo se la sua punta e'
                                    almeno cosi' lontana da dove comincia. Settanta, non
@@ -1022,6 +1026,40 @@ async function inFlusso(fare, profilo, letture, giro) {
       g = null;
     }
     if (g && g.length === gambe.length) {
+      /* LE GAMBE DEVONO TOCCARSI. Con `rank_candidates: false` una fermata puo'
+         venire appoggiata a DUE punti diversi, uno per la gamba che arriva e
+         uno per quella che riparte: l'11/10 papa' sulla rotonda di via
+         Stazione, arrivo sul lato ovest, ripartenza sul lato est, e l'arco
+         della rotonda sparito, sostituito da una riga dritta attraverso
+         l'aiuola. Se due gambe consecutive non si toccano si chiede il
+         raccordo fra le due estremita', con l'aggancio classico. */
+      const raccordi = [];
+      for (let n = 0; n + 1 < g.length; n++) {
+        const prima = g[n];
+        const dopo = g[n + 1];
+        if (!prima || !dopo || prima.length < 1 || dopo.length < 1) continue;
+        const buco = mappaDistanza(prima[prima.length - 1], dopo[0]);
+        if (buco > RACCORDO_MIN) raccordi.push({ n: n, da: prima[prima.length - 1], a: dopo[0], buco: buco });
+      }
+      if (raccordi.length) {
+        /* una richiesta sola con tutte le coppie: le gambe pari (0, 2, 4...)
+           sono i raccordi, quelle dispari uniscono un raccordo al prossimo e
+           si buttano. Il costo e' lo stesso di una richiesta a due tappe. */
+        const tappe = [];
+        raccordi.forEach((rc) => { tappe.push(rc.da, rc.a); });
+        let r = null;
+        try {
+          r = await rotte(tappe, profilo, null, false, true);
+        } catch (e) {
+          r = null;
+        }
+        raccordi.forEach((rc, k) => {
+          const pezzo = r && r[k * 2];
+          if (pezzo && pezzo.length > 1 && lunghezza(pezzo) <= rc.buco * 4 + 100) {
+            pezzo.forEach((c) => g[rc.n].push(c));
+          }
+        });
+      }
       gambe.forEach((gamba, n) => { gamba.via = g[n]; });
     } else {
       for (const gamba of gambe) {
@@ -1106,7 +1144,7 @@ async function agganciaConTraccia(punti, profilo) {
  * Il `radius: 30` conta e resta: senza, lo stesso tratto veniva tre volte piu'
  * lungo del vero, perche' il calcolatore partiva dalla strada sbagliata.
  */
-async function rotte(punti, profilo, bussole, passaggio) {
+async function rotte(punti, profilo, bussole, passaggio, vicina) {
   /*
    * IL FILTRO SULLE STRADINE. Una lettura presa male cade spesso a una ventina
    * di metri dalla strada, e li' dietro c'e' quasi sempre una corsia di
@@ -1126,11 +1164,21 @@ async function rotte(punti, profilo, bussole, passaggio) {
      rientrava (330 m invece di 230). E' la stessa radice del triangolino allo
      stop e del triangolo di Cornaiano: una lettura buona appoggiata alla
      strada sbagliata fra due vicine. */
-  const tappa = { radius: 30, type: 'break', rank_candidates: false };
+  const tappa = { radius: 30, type: 'break', rank_candidates: !!vicina };
   if (profilo === 'auto') tappa.search_filter = { min_road_class: 'residential' };
   /* la direzione di marcia, dove si e' riusciti a ricavarla (vedi versoDiMarcia) */
   const conRotta = (p, i) => {
     const l = Object.assign({ lat: p[0], lon: p[1] }, tappa);
+    /* IL RAGGIO SEGUE LA PRECISIONE. Con la scelta alla pari (rank_candidates
+       false) tutte le strade entro il raggio valgono uguale: con 30 m fissi la
+       sosta di papa' sul vialetto del maso (precisione 4 m) veniva spostata su
+       strada Colterenzio, 28 m piu' in la', e la scia faceva un'andata e
+       ritorno inventata. Una lettura da 4 m non puo' stare a 28 m: il raggio
+       e' una volta e mezza la precisione dichiarata, mai meno di 10 ne' piu'
+       di 30. Il pullman sulla circonvallazione (precisione 14, raggio 21)
+       resta sulla strada giusta lo stesso. */
+    const prec = Number(p[3]);
+    if (!vicina && prec > 0) l.radius = Math.round(Math.max(10, Math.min(30, prec * 1.5)));
     /* una tappa "di passaggio" e' un punto per cui si transita senza fermarsi
        ne' girarsi: e' come si descrive una traccia, non una consegna */
     const passa = Array.isArray(passaggio) ? passaggio[i] : passaggio;

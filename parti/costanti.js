@@ -3,7 +3,7 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.3.64';
+export const MAPPA_VERSIONE = '3.3.65';
 
 /* La versione del CALCOLO delle vie: entra nella chiave dei viaggi in dispensa.
    Si alza SOLO quando cambia il modo di ricavare la via (pulizia delle letture,
@@ -135,6 +135,13 @@ export const MAPPA_SFONDI = [
     chiave: 'satellite',
     nome: 'Satellite',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    /* Sopra la foto, le strade e i nomi dei posti: due strati di Esri, dallo
+       stesso server della foto. Senza, il satellite era bello ma muto: per
+       capire che via fosse bisognava passare allo stradale. */
+    sopra: [
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+    ],
     opzioni: { maxNativeZoom: 19, maxZoom: 20, attribution: '&copy; Esri' },
   },
   {

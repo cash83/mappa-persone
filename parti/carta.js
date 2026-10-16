@@ -177,9 +177,10 @@ export class Carta {
     const daEtichetta = {};
     MAPPA_SFONDI.forEach((s) => {
       const fondo = this.L.tileLayer(s.url, s.opzioni);
-      // certi sfondi hanno le scritte in un secondo strato da mettere sopra
-      const strato = s.sopra
-        ? this.L.layerGroup([fondo, this.L.tileLayer(s.sopra, s.opzioni)])
+      // certi sfondi hanno le scritte (o le strade) in altri strati da mettere sopra
+      const sopra = Array.isArray(s.sopra) ? s.sopra : (s.sopra ? [s.sopra] : []);
+      const strato = sopra.length
+        ? this.L.layerGroup([fondo].concat(sopra.map((u) => this.L.tileLayer(u, s.opzioni))))
         : fondo;
       const etichetta = (this.D.sfondi && this.D.sfondi[s.chiave]) || s.nome;
       scelte[etichetta] = strato;

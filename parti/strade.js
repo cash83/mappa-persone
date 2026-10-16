@@ -999,13 +999,172 @@ const SPERONE_VICINA = 60;      /* metri: la deviazione si tiene se una lettura 
  * e' la lettura che ce l'ha portata. Le rotonde restano: la punta sta sotto i
  * quaranta metri.
  */
+/**
+ * LA ROTONDA NON E' UNA DEVIAZIONE. Il 16/10 mamma torna da Bolzano per la
+ * circonvallazione di Appiano e prende via Cornaiano: le due strade si toccano
+ * in una rotondina dove si entra e si esce dallo STESSO moncone, quindi la via
+ * del calcolatore scende il moncone, fa quasi tutto il giro dell'anello e
+ * risale il moncone: 240 m di strada per 60 m in linea d'aria, nessuna lettura
+ * in mezzo (il telefono aveva saltato 75 secondi). Per la regola delle
+ * deviazioni era uno sperone inventato, e al suo posto restava una riga dritta
+ * attraverso il triangolo fra le due strade. Un anello si riconosce: la via
+ * torna ESATTAMENTE sul vertice da cui e' entrata senza ripassare da nessun
+ * altro vertice (un'andata e ritorno su una strada chiusa ripassa dagli stessi
+ * vertici, un anello no), ed e' corto E TONDO: il calcolatore disegna una
+ * rotonda come un cerchio a tanti vertici, tutti alla stessa distanza dal
+ * centro. Un rettangolo di quattro vertici in fondo a una strada chiusa (il
+ * piazzale di via Ronco, 29/09 e 30/09) e' un anello ma non una rotonda, e lo
+ * sperone che ci porta deve continuare a sparire come prima. I metri di una
+ * rotonda non contano come strada in piu' e i suoi vertici non fanno punta:
+ * resta solo quello che c'e' intorno.
+ */
+const ANELLO_MAX = 200;         // metri: oltre non e' una rotonda, e' un giro
+const ANELLO_VERTICI = 8;       // vertici: meno di cosi' non e' un cerchio
+const ANELLO_TONDO = 1.5;       // raggio massimo / raggio minimo: oltre non e' tonda
+function tonda(linea, a, b) {
+  if (b - a < ANELLO_VERTICI) return false;
+  let la = 0;
+  let lo = 0;
+  for (let k = a; k < b; k++) { la += linea[k][0]; lo += linea[k][1]; }
+  const centro = [la / (b - a), lo / (b - a)];
+  let rMin = Infinity;
+  let rMax = 0;
+  for (let k = a; k < b; k++) {
+    const r = mappaDistanza(centro, linea[k]);
+    if (r < rMin) rMin = r;
+    if (r > rMax) rMax = r;
+  }
+  return rMin > 0 && rMax / rMin <= ANELLO_TONDO;
+}
+
+function anelli(linea) {
+  const dentro = new Set();
+  for (let a = 0; a + 3 < linea.length; a++) {
+    let l = 0;
+    for (let b = a + 1; b < linea.length; b++) {
+      l += mappaDistanza(linea[b - 1], linea[b]);
+      if (l > ANELLO_MAX) break;
+      if (b - a < 3 || mappaDistanza(linea[a], linea[b]) > 1) continue;
+      let ripassa = false;
+      for (let x = a + 1; x < b && !ripassa; x++) {
+        for (let y = x + 1; y < b; y++) {
+          if (mappaDistanza(linea[x], linea[y]) <= 1) { ripassa = true; break; }
+        }
+      }
+      if (!ripassa && tonda(linea, a, b)) {
+        for (let k = a + 1; k <= b; k++) dentro.add(k);
+        a = b - 1;
+      }
+      break;
+    }
+  }
+  return dentro;
+}
+
 function senzaSperoni(linea, letture) {
   if (!linea || linea.length < 4) return linea;
   const fuori = linea.slice();
+  let dentro = anelli(fuori);
+
+  /* UNA CHIUSURA DA i, SE C'E' DA TOGLIERE. Si guardano TUTTE le chiusure,
+     dalla piu' lontana alla piu' vicina, e si toglie la prima senza letture
+     in punta: prima si teneva solo la piu' lontana, e se quella aveva la
+     punta su una lettura non si toglieva niente, nemmeno un anello interno
+     senza letture. Con `soloEsatte` contano solo le chiusure che tornano
+     sullo stesso identico punto (vedi sotto). Restituisce true se ha tolto. */
+  const prova = (i, soloEsatte) => {
+    let l = 0;
+    const chiusure = [];
+    for (let j = i + 1; j < fuori.length; j++) {
+      if (dentro.has(j)) continue;   // i metri della rotonda non sono strada in piu'
+      l += mappaDistanza(fuori[j - 1], fuori[j]);
+      if (l > SPERONE_MAX) break;
+      if (j - i < 2) continue;
+      const salto = mappaDistanza(fuori[i], fuori[j]);
+      if (soloEsatte) {
+        if (salto <= 3) chiusure.push(j);
+      } else if (salto <= RICALCO || (salto <= SPERONE_RIENTRO && l >= Math.max(100, salto * 3))) {
+        chiusure.push(j);
+      }
+    }
+    for (let c = chiusure.length - 1; c >= 0; c--) {
+      const chiude = chiusure[c];
+      let punta = fuori[i];
+      let sporge = 0;
+      for (let k = i + 1; k < chiude; k++) {
+        if (dentro.has(k)) continue;   // la rotonda non fa punta
+        const d = mappaDistanza(fuori[i], fuori[k]);
+        if (d > sporge) { sporge = d; punta = fuori[k]; }
+      }
+      /* UNA LETTURA SOSTIENE LA PUNTA SE STA PIU' VICINA ALLA PUNTA CHE
+         ALLA BASE. Con la sola distanza (60 m) una lettura all'incrocio
+         "sosteneva" anche la punta di un moncone di 40 m che partiva da li':
+         il 16/10 sull'imbocco di strada Colterenzio restava un'uscita-e-
+         rientro di 40 m senza nessuna lettura dentro. Chi va davvero in fondo
+         a una stradina ci lascia una lettura, e quella sta piu' vicina al
+         fondo che all'imbocco. */
+      const base = fuori[i];
+      const conLettura = letture.some((p) => {
+        const dp = mappaDistanza(p, punta);
+        return dp <= SPERONE_VICINA && dp < mappaDistanza(p, base);
+      });
+      /* LO SPECCHIO: un'uscita che torna sui suoi stessi passi, vertice per
+         vertice, e' la forma esatta dell'inversione che il calcolatore
+         inventa quando fra due tappe "di passaggio" bisogna girarsi. Quella
+         si toglie anche se corta (ma non micro, che ha la sua regola), purche'
+         nessuna lettura ne sostenga la punta. */
+      let specchio = mappaDistanza(base, fuori[chiude]) <= 3;
+      for (let k = 1; specchio && i + k < chiude - k; k++) {
+        if (mappaDistanza(fuori[i + k], fuori[chiude - k]) > 3) specchio = false;
+      }
+      const punta_min = specchio ? SPERONE_MICRO : SPERONE_PUNTA;
+      if (sporge >= punta_min && !conLettura) {
+        /* si tolgono i vertici in mezzo; se il rientro e' piu' avanti resta
+           anche il punto di rientro, e i due si uniscono con un tratto dritto
+           di al massimo SPERONE_RIENTRO metri sulla stessa via */
+        const tieniRientro = mappaDistanza(fuori[i], fuori[chiude]) > RICALCO;
+        fuori.splice(i + 1, chiude - i - (tieniRientro ? 1 : 0));
+        dentro = anelli(fuori);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  /* 1) PRIMA GLI ANELLI ESATTI, DALLA FINE. Un anello dentro un altro
+     comincia DOPO: andando a ritroso si giudica prima quello interno. Il
+     16/10 mamma rientra a casa: la via scende da incrocio a casa, fa il giro
+     del piazzale in fondo a via Ronco per invertire (nessuna lettura la' in
+     fondo) e risale all'incrocio. Guardando prima la chiusura grande,
+     incrocio-incrocio, la punta era il piazzale, senza letture, e spariva
+     TUTTA la discesa a casa, letture comprese. Tolto prima il piazzale, la
+     punta della chiusura grande e' casa, a casa le letture ci sono, e la
+     discesa resta. Vale anche al contrario: l'uscita inventata su strada
+     Colterenzio era 930 m, troppo lunga per essere uno sperone, finche' non
+     e' sparito il suo tratto finale, che tornava sullo stesso punto; i 360 m
+     rimasti erano uno sperone pulito. Solo gli anelli esatti qui, perche'
+     a ritroso una chiusura larga puo' lasciare un moncone: il resto lo fa
+     il passaggio dopo, che parte dall'inizio. */
+  for (let i = fuori.length - 1; i >= 0; i--) {
+    if (dentro.has(i)) continue;
+    while (prova(i, true)) { /* finche' da i c'e' da togliere */ }
+  }
+
+  /* 2) POI TUTTO, DALL'INIZIO, ricominciando da capo dopo ogni taglio: un
+     taglio puo' rendere riconoscibile una chiusura che comincia prima. La
+     via puo' solo accorciarsi, quindi finisce sempre. */
   let i = 0;
   while (i < fuori.length) {
-    /* prima il caso micro, sul rientro PIU' VICINO: se si cercasse insieme al
-       resto, un rientro piu' lontano lo coprirebbe e il triangolino resterebbe */
+    if (dentro.has(i)) { i += 1; continue; }
+    /* IL MICRO-SPERONE: la via esce di pochi metri in una laterale e rientra
+       nello stesso identico punto. Il 09/10 mamma ferma venti secondi allo
+       stop di via San Martino: la lettura appoggiata all'imbocco di via
+       Cornaiano, sei metri dentro, e sulla mappa un triangolino. A questa
+       scala nessuna lettura puo' dire se ci e' andata davvero, e nessuno fa
+       sei metri in una laterale per tornare indietro: si toglie sempre.
+       Prima il caso micro, sul rientro PIU' VICINO: se si cercasse insieme
+       al resto, un rientro piu' lontano lo coprirebbe e il triangolino
+       resterebbe. */
     let microFine = -1;
     let lMicro = 0;
     for (let j = i + 1; j < fuori.length && j <= i + 6; j++) {
@@ -1015,40 +1174,10 @@ function senzaSperoni(linea, letture) {
     }
     if (microFine > 0) {
       fuori.splice(i + 1, microFine - i);
+      dentro = anelli(fuori);
       continue;
     }
-    let l = 0;
-    let chiude = -1;
-    for (let j = i + 1; j < fuori.length; j++) {
-      l += mappaDistanza(fuori[j - 1], fuori[j]);
-      if (l > SPERONE_MAX) break;
-      if (j - i < 2) continue;
-      const salto = mappaDistanza(fuori[i], fuori[j]);
-      if (salto <= RICALCO || (salto <= SPERONE_RIENTRO && l >= Math.max(100, salto * 3))) chiude = j;
-    }
-    if (chiude > 0) {
-      let punta = fuori[i];
-      let sporge = 0;
-      for (let k = i + 1; k < chiude; k++) {
-        const d = mappaDistanza(fuori[i], fuori[k]);
-        if (d > sporge) { sporge = d; punta = fuori[k]; }
-      }
-      const conLettura = letture.some((p) => mappaDistanza(p, punta) <= SPERONE_VICINA);
-      /* IL MICRO-SPERONE: la via esce di pochi metri in una laterale e rientra
-         nello stesso identico punto. Il 09/10 mamma ferma venti secondi allo
-         stop di via San Martino: la lettura appoggiata all'imbocco di via
-         Cornaiano, sei metri dentro, e sulla mappa un triangolino. A questa
-         scala nessuna lettura puo' dire se ci e' andata davvero, e nessuno fa
-         sei metri in una laterale per tornare indietro: si toglie sempre. */
-      if (sporge >= SPERONE_PUNTA && !conLettura) {
-        /* si tolgono i vertici in mezzo; se il rientro e' piu' avanti resta
-           anche il punto di rientro, e i due si uniscono con un tratto dritto
-           di al massimo SPERONE_RIENTRO metri sulla stessa via */
-        const tieniRientro = mappaDistanza(fuori[i], fuori[chiude]) > RICALCO;
-        fuori.splice(i + 1, chiude - i - (tieniRientro ? 1 : 0));
-        continue;
-      }
-    }
+    if (prova(i, false)) { i = 0; continue; }
     i += 1;
   }
   return fuori;

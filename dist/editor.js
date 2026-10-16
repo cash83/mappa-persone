@@ -1,10 +1,10 @@
 import {
   MAPPA_AGGANCIO, MAPPA_DIM, MAPPA_OPACITA, MAPPA_ORE, MAPPA_SFONDI, MAPPA_SFONDO,
   MAPPA_MUCCHIO_OPACITA, MAPPA_SUE, MAPPA_VERSIONE, MAPPA_ZOOM,
-} from './costanti.js?v=3.3.62';
-import { mappaRighe, mappaSua } from './utili.js?v=3.3.62';
-import { caricaFoto, togliFoto } from './foto.js?v=3.3.62';
-import { parla } from './lingue.js?v=3.3.62';
+} from './costanti.js?v=3.3.64';
+import { mappaRighe, mappaSua } from './utili.js?v=3.3.64';
+import { caricaFoto, togliFoto } from './foto.js?v=3.3.64';
+import { parla } from './lingue.js?v=3.3.64';
 
 /**
  * La finestra delle impostazioni.

@@ -1,12 +1,12 @@
 import {
   MAPPA_AGGANCIO, MAPPA_ORE, MAPPA_RILEGGI, MAPPA_SFONDO, MAPPA_SUE, MAPPA_ZOOM,
-} from './costanti.js?v=3.3.69';
-import { MAPPA_STILE } from './stile.js?v=3.3.69';
-import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.3.69';
-import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.3.69';
-import { agganciaStrade } from './strade.js?v=3.3.69';
-import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.3.69';
-import { parla } from './lingue.js?v=3.3.69';
+} from './costanti.js?v=3.3.70';
+import { MAPPA_STILE } from './stile.js?v=3.3.70';
+import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.3.70';
+import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.3.70';
+import { agganciaStrade } from './strade.js?v=3.3.70';
+import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.3.70';
+import { parla } from './lingue.js?v=3.3.70';
 
 /**
  * LA SCHEDA. Tiene insieme i due pezzi e parla con Home Assistant: riceve la

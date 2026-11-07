@@ -1426,8 +1426,19 @@ async function rotte(punti, profilo, bussole, passaggio, vicina) {
      rientrava (330 m invece di 230). E' la stessa radice del triangolino allo
      stop e del triangolo di Cornaiano: una lettura buona appoggiata alla
      strada sbagliata fra due vicine. */
+  /* NIENTE PIU' FILTRO SULLE STRADINE (il vecchio `search_filter
+     min_road_class residential`, 3.0.5 - tolto il 07/11/2026). Era nato
+     contro i cappi delle corsie di servizio, ma vietava l'aggancio anche
+     dove la strada vera E' di servizio: il tratto di strada Madonna del
+     Riposo della destinazione e' `service` su OSM, e la tappa - pure con
+     una lettura precisa sopra - veniva appoggiata 73 m piu' in la', sulla
+     Circonvallazione: da li' il giro sulla parallela che nessuno ha fatto
+     (14:26 e giro di prova delle 19:52; Mattia, da bus senza filtro, era
+     giusto). I cappi oggi li tengono a bada `rank_candidates: false` (la
+     scelta alla pari, 3.3.58) e il raggio dalla precisione (3.3.60), piu'
+     senzaSperoni a valle: misurato sulla giornata intera, senza filtro
+     cambia solo cio' che doveva cambiare. */
   const tappa = { radius: 30, type: 'break', rank_candidates: !!vicina };
-  if (profilo === 'auto') tappa.search_filter = { min_road_class: 'residential' };
   /* la direzione di marcia, dove si e' riusciti a ricavarla (vedi versoDiMarcia) */
   const conRotta = (p, i) => {
     const l = Object.assign({ lat: p[0], lon: p[1] }, tappa);
@@ -1479,7 +1490,6 @@ async function rotte(punti, profilo, bussole, passaggio, vicina) {
 async function vieDelBuco(a, b, profilo) {
   const tappa = (p) => {
     const l = { lat: p[0], lon: p[1], type: 'break', radius: 30, rank_candidates: false };
-    if (profilo === 'auto') l.search_filter = { min_road_class: 'residential' };
     const prec = Number(p[3]);
     if (prec > 0) l.radius = Math.round(Math.max(10, Math.min(30, prec * 1.5)));
     return l;

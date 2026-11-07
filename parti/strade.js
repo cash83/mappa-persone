@@ -74,6 +74,27 @@ const BUCO_EXTRA = 250;          /* metri in piu' sul tetto di un buco, oltre la
                                     circonvallazione a via Cornaiano passa per la rotonda
                                     di via Stazione, 1445 m per 622 di filo, e il tetto
                                     era 1444. Un metro, e la scia tirava dritto. */
+const BUCO_GEOGRAFIA = 1000;     /* metri: da qui in su un buco e' un pezzo di
+                                    viaggio senza letture, non un dettaglio. Se il
+                                    tetto boccia il percorso si fa la prova della
+                                    geografia (vedi sotto) invece di tirare una
+                                    riga dritta per chilometri. Sotto, il tetto
+                                    resta l'ultimo giudice come sempre: rotonde,
+                                    sensi unici e speroni sono tutti piu' piccoli
+                                    di cosi'. */
+const ALTERNATE = 3;             /* quante strade alternative si chiedono su un buco
+                                    grande: fra Bolzano e Cornaiano ce ne sono tre
+                                    vere, e la richiesta costa uguale */
+const VOTO_TETTO = 500;          /* metri: oltre questa distanza una lettura non dice
+                                    piu' niente su una variante - e' lontana da tutte */
+const VOTO_MARGINE = 100;        /* metri: due varianti coi voti entro questo margine
+                                    sono pari, e fra pari vince la piu' corta */
+const TEMPO_PARI = 30;           /* secondi: una variante piu' lenta della migliore
+                                    oltre questo margine non l'ha presa nessuno.
+                                    Misurato sul rientro del 06/11: superstrada e
+                                    statale di Frangarto entro 15 s l'una dall'altra
+                                    (pari davvero), la collina di Colterenzio +39 s
+                                    da bus e +84 da auto - e non era la strada */
 const ROTTA_MIN = 25;            /* metri: sotto questa distanza due letture non
                                     dicono in che direzione si stava andando -
                                     da fermo il GPS balla e la bussola esce a caso */
@@ -292,6 +313,29 @@ function lunghezza(g) {
   let l = 0;
   for (let i = 1; i < g.length; i++) l += mappaDistanza(g[i - 1], g[i]);
   return l;
+}
+
+/** la distanza di un punto dalla linea, segmento per segmento (conto piano:
+    i tratti sono corti e la terra non fa in tempo a curvare) */
+function dallaLinea(p, linea) {
+  const ky = 111320;                                  // metri per grado di latitudine
+  const kx = ky * Math.cos((p[0] * Math.PI) / 180);   // e di longitudine, a questa latitudine
+  let minimo = Infinity;
+  for (let i = 1; i < linea.length; i++) {
+    const a = linea[i - 1];
+    const b = linea[i];
+    const px = (p[1] - a[1]) * kx;
+    const py = (p[0] - a[0]) * ky;
+    const bx = (b[1] - a[1]) * kx;
+    const by = (b[0] - a[0]) * ky;
+    const l2 = bx * bx + by * by;
+    let t = l2 ? (px * bx + py * by) / l2 : 0;
+    if (t < 0) t = 0;
+    else if (t > 1) t = 1;
+    const d = Math.hypot(px - t * bx, py - t * by);
+    if (d < minimo) minimo = d;
+  }
+  return minimo;
 }
 
 /** polilinea compressa a sei decimali, come la manda Valhalla */
@@ -1427,6 +1471,43 @@ async function rotte(punti, profilo, bussole, passaggio, vicina) {
 
 
 /**
+ * LA STRADA E LE SUE ALTERNATIVE, per il buco grande: la principale piu' fino a
+ * ALTERNATE varianti, tutte in una richiesta sola. Le tappe sono fatte come in
+ * `rotte()` (stesso raggio dalla precisione, stesso filtro sulle stradine),
+ * perche' il punto di appoggio deve essere lo stesso che avrebbe avuto il buco.
+ */
+async function vieDelBuco(a, b, profilo) {
+  const tappa = (p) => {
+    const l = { lat: p[0], lon: p[1], type: 'break', radius: 30, rank_candidates: false };
+    if (profilo === 'auto') l.search_filter = { min_road_class: 'residential' };
+    const prec = Number(p[3]);
+    if (prec > 0) l.radius = Math.round(Math.max(10, Math.min(30, prec * 1.5)));
+    return l;
+  };
+  const r = await chiedi(indirizzo('route'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      locations: [tappa(a), tappa(b)],
+      costing: profilo,
+      directions_options: { units: 'kilometers' },
+      alternates: ALTERNATE,
+    }),
+  });
+  const j = await r.json();
+  const vie = [];
+  const metti = (trip) => {
+    if (!trip || !trip.legs) return;
+    const g = [];
+    trip.legs.forEach((l) => decomprimi(l.shape).forEach((c) => g.push(c)));
+    if (g.length > 1) vie.push({ linea: g, tempo: (trip.summary && trip.summary.time) || 0 });
+  };
+  metti(j.trip);
+  (j.alternates || []).forEach((alt) => metti(alt && alt.trip));
+  return vie;
+}
+
+/**
  * IL CONTROLLO CHE SALVA TUTTO: la via ricostruita deve COPRIRE la traccia, non
  * solo essere corta. Tre cose: non troppo lunga, ed e' li' che si beccano i giri
  * inventati; non troppo corta, che l'aggancio a volte restituisce un moncone; e
@@ -1879,13 +1960,78 @@ async function pezzoDaBlocco(blocco, o) {
     }
   }
 
+  /*
+   * LA GEOGRAFIA VINCE SUI BUCHI GRANDI, E LE LETTURE SCARTATE VOTANO. Il 06/11
+   * mamma e Mattia rientrano da Bolzano coi telefoni muti per tutto il viaggio:
+   * un buco solo, 4,7 km in linea d'aria. La strada vera - la stessa che papa',
+   * con le letture fitte, disegna per intero - fa 10 km: piu' del doppio
+   * dell'aria, sopra il tetto, e al posto del viaggio restava una riga dritta
+   * attraverso i campi. Il tetto esiste per buttare i giri INVENTATI dal
+   * calcolatore, che sono cose LOCALI - un aggancio alla strada sbagliata, un
+   * cappio su uno svincolo, una rotonda - mai di chilometri: su un buco cosi'
+   * grande non distingue piu' niente, boccia la geografia. Quindi da
+   * BUCO_GEOGRAFIA in su una via si disegna comunque. QUALE via, lo decidono
+   * in due:
+   * 1. le letture del viaggio dentro il buco, anche quelle che i filtri hanno
+   *    scartato: non guidano la via ma dicono dove si e' stati (lo stesso
+   *    principio di senzaSperoni). Si chiedono anche le strade ALTERNATIVE e
+   *    ogni lettura vota la variante che le passa piu' vicino: il fix da 104 m
+   *    delle 21:45 stava a 12 m dalla statale di Frangarto e ha bocciato da
+   *    solo la variante per la collina;
+   * 2. il TEMPO: fra le varianti rimaste si scartano quelle piu' lente della
+   *    migliore oltre TEMPO_PARI (la collina di Colterenzio: +39 s da bus,
+   *    +84 da auto - chi guida non la prende). Mattia aveva una sola lettura
+   *    nel buco, vicino alla partenza, che non bocciava niente: senza questo
+   *    filtro finiva sulla collina;
+   * 3. fra le varianti a pari voto e pari tempo vince la PIU' CORTA: e' quella
+   *    che la gente prende. Non il percorso con `shortest`: quello e' stato
+   *    provato (3.3.66) e sceglieva stradine che nessuno fa; qui si sceglie
+   *    solo fra strade che il calcolatore considera gia' sensate.
+   * Sotto il chilometro tutto come prima: rotonde, sensi unici e speroni li
+   * giudica il tetto.
+   */
+  for (const pezzo of fare) {
+    if (pezzo.tipo !== 'buco' || pezzo.d < BUCO_GEOGRAFIA) continue;
+    const limite = pezzo.d * (o.giro / 100) + BUCO_EXTRA;
+    if (pezzo.via && lunghezza(pezzo.via) <= limite) continue;
+    try {
+      let vie = await vieDelBuco(pezzo.a, pezzo.b, profilo);
+      if (vie.length) {
+        // il voto delle letture dentro il buco, scartate comprese
+        const dentro = gamba.filter((q) => q[2] > (pezzo.a[2] || 0) && q[2] < (pezzo.b[2] || Infinity));
+        if (vie.length > 1 && dentro.length) {
+          const nota = (linea) => {
+            let somma = 0;
+            for (const q of dentro) somma += Math.min(VOTO_TETTO, dallaLinea(q, linea));
+            return somma / dentro.length;
+          };
+          vie.forEach((v) => { v.voto = nota(v.linea); });
+          let meglio = Infinity;
+          vie.forEach((v) => { if (v.voto < meglio) meglio = v.voto; });
+          vie = vie.filter((v) => v.voto <= meglio + VOTO_MARGINE);
+        }
+        // il tempo: le varianti chiaramente piu' lente non le ha prese nessuno
+        let rapido = Infinity;
+        vie.forEach((v) => { if (v.tempo && v.tempo < rapido) rapido = v.tempo; });
+        if (rapido < Infinity) vie = vie.filter((v) => !v.tempo || v.tempo <= rapido + TEMPO_PARI);
+        // fra le rimaste, la piu' corta
+        vie.sort((x, y) => lunghezza(x.linea) - lunghezza(y.linea));
+        if (vie.length) pezzo.via = vie[0].linea;
+      }
+    } catch (e) {
+      /* si tiene quello che c'era */
+    }
+    if (pezzo.via && pezzo.via.length > 1) pezzo.geografia = true;
+  }
+
   const linea = [];
   for (const pezzo of fare) {
     if (pezzo.tipo === 'buco') {
       // lo stesso freno di sempre: un percorso piu' lungo del vero oltre la
       // percentuale detta piu' duecento metri si butta e resta la linea grezza
+      // - a meno che la prova della geografia non l'abbia promosso
       const limite = pezzo.d * (o.giro / 100) + BUCO_EXTRA;
-      attacca(linea, pezzo.via && lunghezza(pezzo.via) <= limite
+      attacca(linea, pezzo.via && (pezzo.geografia || lunghezza(pezzo.via) <= limite)
         ? pezzo.via
         : [[pezzo.a[0], pezzo.a[1]], [pezzo.b[0], pezzo.b[1]]], pezzo.a);
       continue;

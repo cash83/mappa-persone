@@ -1,6 +1,6 @@
-import { mappaDistanza, mappaSalta } from './utili.js?v=3.3.70';
-import { parla } from './lingue.js?v=3.3.70';
-import { MAPPA_SFONDI, MAPPA_SFONDO } from './costanti.js?v=3.3.70';
+import { mappaDistanza, mappaSalta } from './utili.js?v=3.3.71';
+import { parla } from './lingue.js?v=3.3.71';
+import { MAPPA_SFONDI, MAPPA_SFONDO } from './costanti.js?v=3.3.71';
 
 /**
  * IL CARTELLINO che si apre toccando una persona: foto, nome, dove sta e da
@@ -130,7 +130,13 @@ export function cartellino(hass, ent, st, col, cambiato, spazio, sfondo) {
     '<div class="mappina" hidden><div class="telaio"></div></div>' +
     '<a class="fuori" target="_blank" rel="noopener"' +
     ' href="https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lon + '">'
-    + mappaSalta(D.cart.apriMaps) + ' &#8599;</a>';
+    + mappaSalta(D.cart.apriMaps) + ' &#8599;</a>' +
+    /* "Portami qui": Maps si apre gia' in modalita' percorso, con l'arrivo
+       sulla persona e la partenza sulla posizione di chi tocca. Il link di
+       sopra invece MOSTRA il punto, coi nomi dei locali: servono tutti e due. */
+    '<a class="fuori" target="_blank" rel="noopener"' +
+    ' href="https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lon + '">'
+    + mappaSalta(D.portamiMaps) + ' &#8599;</a>';
 
   const det = box.querySelector('.det');
   const map = box.querySelector('.map');

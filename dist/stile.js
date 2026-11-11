@@ -1,4 +1,4 @@
-import { MAPPA_ICONA_CENTRA, MAPPA_ICONA_STRATI } from './costanti.js?v=3.3.70';
+import { MAPPA_ICONA_CENTRA, MAPPA_ICONA_STRATI } from './costanti.js?v=3.3.71';
 
 /**
  * Il vestito della scheda. Va messo NELLO shadow DOM insieme a quello di
@@ -211,7 +211,8 @@ export const MAPPA_STILE = `
   /* quando il cartellino e' piu' alto della scheda, Leaflet lo fa scorrere:
      via il bordo che ci mette di suo, che sembra un errore */
   .mappa-cart .leaflet-popup-scrolled { border-bottom: none; border-top: none; }
-  .cartellino .fuori { display: block; margin-top: 8px; color: var(--primary-color, #2196f3); text-decoration: none; }
+  /* vale anche per i cartellini piccoli di scie e pallini (il salto su Maps) */
+  .cartellino .fuori, .mappa-cart .fuori { display: block; margin-top: 8px; color: var(--primary-color, #2196f3); text-decoration: none; }
 
   /* l'icona con la foto della persona */
   .segno {

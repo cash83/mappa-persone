@@ -1,13 +1,13 @@
 import {
   MAPPA_DIM, MAPPA_MUCCHIO, MAPPA_MUCCHIO_OPACITA, MAPPA_OPACITA, MAPPA_PRINCIPALE,
   MAPPA_PREC_VIA, MAPPA_SFONDO, MAPPA_SUE, MAPPA_VICINO, MAPPA_ZONA_SPENTA,
-} from './costanti.js?v=3.3.70';
+} from './costanti.js?v=3.3.71';
 import {
   mappaAffianca, mappaColore, mappaDistanza, mappaElenco, mappaOra, mappaRighe, mappaSalta,
   mappaSua,
-} from './utili.js?v=3.3.70';
-import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.70';
-import { parla } from './lingue.js?v=3.3.70';
+} from './utili.js?v=3.3.71';
+import { cartellino, sensoreIndirizzo } from './cartellino.js?v=3.3.71';
+import { parla } from './lingue.js?v=3.3.71';
 
 /**
  * LA GESTIONE DELLE ENTITA'. Qui dentro sta tutto e solo quello che riguarda
@@ -404,7 +404,8 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
         const via = carta.usa(kl, () => {
           const l = L.polyline(linea,
             Object.assign({ bubblingMouseEvents: false, pane: 'scie' }, stile));
-          l.on('click', () => l.openTooltip());   // col dito, come per i pallini
+          // il tocco apre il cartellino col salto su Maps (bindPopup, sotto);
+          // l'orario resta nel fumetto, che sul computer esce passandoci sopra
           return l;
         });
         via.setLatLngs(linea);
@@ -417,6 +418,36 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
           : nome;
         if (via.getTooltip()) via.setTooltipContent(quando);
         else via.bindTooltip(quando, { sticky: true });
+
+        /* IL SALTO SU GOOGLE MAPS. Il tocco apre un cartellino con l'orario e
+           un collegamento che apre Maps gia' in modalita' percorso: su una
+           sosta "portami qui", su un viaggio il tragitto rifatto con partenza,
+           arrivo e fino a otto tappe prese dalla linea, cosi' Maps ripercorre
+           la STESSA strada e non la sua preferita. Il mezzo glielo dice il
+           profilo della persona; con "automatico" decide Maps. Le tappe si
+           prendono dai punti VERI del pezzo (pezzo.p), non dalla linea
+           spostata di lato per le corsie. */
+        const pto = (c) => c[0].toFixed(5) + ',' + c[1].toFixed(5);
+        let salto;
+        if (pezzo.fermo || pezzo.p.length < 2) {
+          salto = 'https://www.google.com/maps/dir/?api=1&destination=' + pto(pezzo.p[pezzo.p.length >> 1]);
+        } else {
+          const MODI = { piedi: 'walking', bici: 'bicycling', auto: 'driving', bus: 'transit' };
+          const modo = MODI[sua('profilo')];
+          const su = pezzo.p;
+          const nTappe = Math.min(8, su.length - 2);
+          const tappe = [];
+          for (let i = 1; i <= nTappe; i++) tappe.push(pto(su[Math.round((i * (su.length - 1)) / (nTappe + 1))]));
+          salto = 'https://www.google.com/maps/dir/?api=1&origin=' + pto(su[0])
+            + '&destination=' + pto(su[su.length - 1])
+            + (tappe.length ? '&waypoints=' + tappe.join('%7C') : '')
+            + (modo ? '&travelmode=' + modo : '');
+        }
+        const cartScia = '<div class="scia-cart">' + quando
+          + '<br><a class="fuori" target="_blank" rel="noopener" href="' + salto + '">'
+          + mappaSalta(pezzo.fermo ? D.portamiMaps : D.rifaiMaps) + ' &#8599;</a></div>';
+        if (via.getPopup()) via.setPopupContent(cartScia);
+        else via.bindPopup(cartScia, { className: 'mappa-cart', autoPan: false });
 
         /* LE FRECCE DEL SENSO DI MARCIA. Si mettono ogni tot PIXEL, non ogni
            tot metri: cosi' restano poche e ben distanziate a qualunque
@@ -529,7 +560,7 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
               bubblingMouseEvents: false,
               pane: 'pallini',
             }, stile));
-            q.on('click', () => q.openTooltip());
+            // il tocco apre il cartellino col salto su Maps (bindPopup, sotto)
             return q;
           });
           c.setLatLng(dove);
@@ -541,6 +572,17 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
             + (vuoto ? '<br><small>&plusmn; ' + Math.round(p[3]) + ' m</small>' : '');
           if (c.getTooltip()) c.setTooltipContent(detto);
           else c.bindTooltip(detto, { direction: 'top' });
+          /* Il tocco apre lo stesso testo in un cartellino, piu' "portami qui":
+             Maps in modalita' percorso verso la LETTURA VERA (p), non il punto
+             eventualmente spostato sulla scia. E' cosi' che si raggiunge il
+             posto di una sosta: le soste a sosta_linea zero non hanno linea da
+             toccare, ma i loro pallini ci sono sempre. */
+          const cartPall = detto
+            + '<br><a class="fuori" target="_blank" rel="noopener"'
+            + ' href="https://www.google.com/maps/dir/?api=1&destination=' + p[0].toFixed(5) + ',' + p[1].toFixed(5) + '">'
+            + mappaSalta(D.portamiMaps) + ' &#8599;</a>';
+          if (c.getPopup()) c.setPopupContent(cartPall);
+          else c.bindPopup(cartPall, { className: 'mappa-cart', autoPan: false });
         });
       }
     }

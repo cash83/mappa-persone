@@ -36,6 +36,10 @@ const IT = {
   sosta: 'Sosta',
   scia: 'Scia',
   cartellinoScia: (verso, chi, da, a) => verso + ' di ' + chi + ', dalle ' + da + ' alle ' + a,
+  /* i collegamenti che aprono Google Maps in modalita' percorso: sul cartellino
+     della persona, sui pallini e sulle scie */
+  portamiMaps: 'Portami qui',
+  rifaiMaps: 'Rifai il tragitto su Maps',
 
   /* Il cartellino che si apre toccando una faccia. Prima era tutto scritto a
      mano in italiano dentro cartellino.js, e in inglese restava italiano. */
@@ -170,6 +174,8 @@ const EN = {
   sosta: 'Stop',
   scia: 'Trail',
   cartellinoScia: (verso, chi, da, a) => chi + ' — ' + verso + ', ' + da + ' to ' + a,
+  portamiMaps: 'Take me here',
+  rifaiMaps: 'Redo this route in Maps',
 
   cart: {
     aCasa: 'Home',

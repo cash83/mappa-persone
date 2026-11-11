@@ -1,6 +1,6 @@
-import { mappaDistanza, mappaSalta } from './utili.js?v=3.3.71';
-import { parla } from './lingue.js?v=3.3.71';
-import { MAPPA_SFONDI, MAPPA_SFONDO } from './costanti.js?v=3.3.71';
+import { mappaDistanza, mappaSalta } from './utili.js?v=3.3.72';
+import { parla } from './lingue.js?v=3.3.72';
+import { MAPPA_SFONDI, MAPPA_SFONDO } from './costanti.js?v=3.3.72';
 
 /**
  * IL CARTELLINO che si apre toccando una persona: foto, nome, dove sta e da
@@ -191,7 +191,11 @@ export function cartellino(hass, ent, st, col, cambiato, spazio, sfondo) {
     });
     piccola.attributionControl.setPrefix(false);
     L.tileLayer(scelto.url, scelto.opzioni).addTo(piccola);
-    if (scelto.sopra) L.tileLayer(scelto.sopra, scelto.opzioni).addTo(piccola);
+    /* `sopra` puo' essere UN indirizzo o un ELENCO (il satellite ne ha due:
+       strade e nomi). Qui si faceva L.tileLayer(elenco) e Leaflet moriva li':
+       la mappina restava senza scritte e SENZA IL PALLINO della posizione,
+       che si disegna dopo. carta.js lo gestiva gia', questa copia no. */
+    if (scelto.sopra) for (const s of [].concat(scelto.sopra)) L.tileLayer(s, scelto.opzioni).addTo(piccola);
     L.circleMarker([lat, lon], {
       radius: 7, color: '#fff', weight: 2, fillColor: col, fillOpacity: 1,
     }).addTo(piccola);

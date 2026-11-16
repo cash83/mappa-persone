@@ -1,5 +1,5 @@
-import { mappaDistanza } from './utili.js?v=3.3.72';
-import { MAPPA_CALCOLO, MAPPA_PREC_VIA } from './costanti.js?v=3.3.72';
+import { mappaDistanza } from './utili.js?v=3.3.73';
+import { MAPPA_CALCOLO, MAPPA_PREC_VIA } from './costanti.js?v=3.3.73';
 
 /**
  * LA VIA SOTTO LA SCIA. E' lo schema che funzionava, rimesso com'era:
@@ -82,6 +82,30 @@ const BUCO_GEOGRAFIA = 1000;     /* metri: da qui in su un buco e' un pezzo di
                                     resta l'ultimo giudice come sempre: rotonde,
                                     sensi unici e speroni sono tutti piu' piccoli
                                     di cosi'. */
+const BUCO_OROLOGIO = 500;       /* metri: da qui fino a BUCO_GEOGRAFIA un buco
+                                    bocciato dal tetto ha diritto alla PROVA
+                                    DELL'OROLOGIO (vedi sotto). Sotto i 500 il
+                                    tetto resta l'unico giudice: i cappi di
+                                    carreggiata e gli speroni storici stanno
+                                    tutti fra i 200 e i 400 metri, e li' la
+                                    riga corta e' l'onesta' che si vuole. */
+const OROLOGIO_TETTO = 1.3;      /* la via puo' costare al massimo il 130% del
+                                    silenzio: una strada che non ci sta nel buco
+                                    nemmeno a velocita' di targa non e' quella
+                                    percorsa. Il margine copre chi va piu'
+                                    svelto del previsto. Un limite DAL BASSO
+                                    invece non c'e' apposta: il silenzio e'
+                                    sempre maggiore o uguale del tempo di guida
+                                    (semafori, code, capi col timestamp di
+                                    quando si era ancora fermi), e bocciare una
+                                    via perche' "troppo corta per il silenzio"
+                                    butterebbe strade vere a ogni rosso. */
+const OROLOGIO_ARIA = 10;        /* km/h: andatura minima IN ARIA (filo del buco
+                                    diviso silenzio) perche' la prova si faccia.
+                                    Chi attraversa un piazzale a piedi va a 3
+                                    all'ora: non stava percorrendo una strada,
+                                    la riga dritta e' la verita', e nessun giro
+                                    dell'isolato la deve coprire. */
 const ALTERNATE = 3;             /* quante strade alternative si chiedono su un buco
                                     grande: fra Bolzano e Cornaiano ce ne sono tre
                                     vere, e la richiesta costa uguale */
@@ -1487,18 +1511,28 @@ async function rotte(punti, profilo, bussole, passaggio, vicina) {
  * `rotte()` (stesso raggio dalla precisione, stesso filtro sulle stradine),
  * perche' il punto di appoggio deve essere lo stesso che avrebbe avuto il buco.
  */
-async function vieDelBuco(a, b, profilo) {
-  const tappa = (p) => {
+async function vieDelBuco(a, b, profilo, bussole) {
+  /* `bussole`: la direzione di marcia ai due capi, come in rotte(). La passa il
+     buco MEDIO (la prova dell'orologio): senza, su una strada a due carreggiate
+     il calcolatore appoggia il capo alla carreggiata sbagliata e propone il
+     cappio fino allo svincolo - proprio l'invenzione che l'orologio potrebbe
+     poi scambiare per vera. Il buco grande non le passa: la geografia dei
+     chilometri funziona cosi' da 3.3.68 e non si tocca. */
+  const tappa = (p, g) => {
     const l = { lat: p[0], lon: p[1], type: 'break', radius: 30, rank_candidates: false };
     const prec = Number(p[3]);
     if (prec > 0) l.radius = Math.round(Math.max(10, Math.min(30, prec * 1.5)));
+    if (g !== null && g !== undefined) {
+      l.heading = g;
+      l.heading_tolerance = ROTTA_APERTURA;
+    }
     return l;
   };
   const r = await chiedi(indirizzo('route'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      locations: [tappa(a), tappa(b)],
+      locations: [tappa(a, bussole && bussole[0]), tappa(b, bussole && bussole[1])],
       costing: profilo,
       directions_options: { units: 'kilometers' },
       alternates: ALTERNATE,
@@ -1997,15 +2031,37 @@ async function pezzoDaBlocco(blocco, o) {
    *    che la gente prende. Non il percorso con `shortest`: quello e' stato
    *    provato (3.3.66) e sceglieva stradine che nessuno fa; qui si sceglie
    *    solo fra strade che il calcolatore considera gia' sensate.
-   * Sotto il chilometro tutto come prima: rotonde, sensi unici e speroni li
+   * Sotto il chilometro, dai 500 m in su, c'e' la PROVA DELL'OROLOGIO (16/11:
+   * mamma, buco di 722 m, telefono muto 119 secondi; la strada vera fa 1829 m
+   * - il 253% dell'aria, bocciata dal tetto per 135 metri da tutti e tre i
+   * ripescaggi - e si percorre in 115 secondi previsti. L'orologio la
+   * conferma). Un buco medio bocciato dal tetto fa la stessa selezione del
+   * buco grande (varianti, voti, tempo, piu' corta), ma la scelta si accetta
+   * SOLO SE il suo tempo previsto ci sta nel silenzio reale (OROLOGIO_TETTO)
+   * e se in aria si andava ad andatura da strada (OROLOGIO_ARIA): chi
+   * attraversa un piazzale a piedi resta una riga, come deve. Alle tappe del
+   * buco medio si danno anche le direzioni di marcia, per non farsi proporre
+   * il cappio di carreggiata che il ripescaggio 1 aveva gia' evitato.
+   * Sotto i 500 metri tutto come sempre: rotonde, sensi unici e speroni li
    * giudica il tetto.
    */
   for (const pezzo of fare) {
-    if (pezzo.tipo !== 'buco' || pezzo.d < BUCO_GEOGRAFIA) continue;
+    if (pezzo.tipo !== 'buco' || pezzo.d < BUCO_OROLOGIO) continue;
     const limite = pezzo.d * (o.giro / 100) + BUCO_EXTRA;
     if (pezzo.via && lunghezza(pezzo.via) <= limite) continue;
+    const grande = pezzo.d >= BUCO_GEOGRAFIA;
+    let durata = 0;
+    if (!grande) {
+      /* l'orologio vale solo se e' sano: capi senza orario, o letture arrivate
+         in ordine invertito, e si resta alla riga dritta di sempre */
+      durata = (Number(pezzo.b[2]) - Number(pezzo.a[2])) / 1000;
+      if (!(durata > 0)) continue;
+      if ((pezzo.d / durata) * 3.6 < OROLOGIO_ARIA) continue;
+    }
+    let scelta = null;   // buco medio: la via, solo se l'orologio la promuove
     try {
-      let vie = await vieDelBuco(pezzo.a, pezzo.b, profilo);
+      let vie = await vieDelBuco(pezzo.a, pezzo.b, profilo,
+        grande ? null : [verso(pezzo.a, 'arrivo'), verso(pezzo.b, 'partenza')]);
       if (vie.length) {
         // il voto delle letture dentro il buco, scartate comprese
         const dentro = gamba.filter((q) => q[2] > (pezzo.a[2] || 0) && q[2] < (pezzo.b[2] || Infinity));
@@ -2026,12 +2082,29 @@ async function pezzoDaBlocco(blocco, o) {
         if (rapido < Infinity) vie = vie.filter((v) => !v.tempo || v.tempo <= rapido + TEMPO_PARI);
         // fra le rimaste, la piu' corta
         vie.sort((x, y) => lunghezza(x.linea) - lunghezza(y.linea));
-        if (vie.length) pezzo.via = vie[0].linea;
+        if (vie.length) {
+          if (grande) {
+            pezzo.via = vie[0].linea;
+          } else {
+            /* la prova dell'orologio: il tempo previsto della scelta deve
+               starci nel silenzio. Un tempo ignoto (0) non si accetta mai. */
+            const t = Number(vie[0].tempo);
+            if (t > 0 && t <= durata * OROLOGIO_TETTO) scelta = vie[0].linea;
+          }
+        }
       }
     } catch (e) {
       /* si tiene quello che c'era */
     }
-    if (pezzo.via && pezzo.via.length > 1) pezzo.geografia = true;
+    /* la promozione oltre il tetto: per il buco grande come da 3.3.68 (una via
+       c'e' comunque), per il medio SOLO quella che l'orologio ha promosso -
+       mai la via gia' bocciata dai ripescaggi, mai dopo un errore di rete */
+    if (grande) {
+      if (pezzo.via && pezzo.via.length > 1) pezzo.geografia = true;
+    } else if (scelta && scelta.length > 1) {
+      pezzo.via = scelta;
+      pezzo.geografia = true;
+    }
   }
 
   const linea = [];

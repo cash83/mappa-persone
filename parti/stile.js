@@ -214,6 +214,72 @@ export const MAPPA_STILE = `
   /* vale anche per i cartellini piccoli di scie e pallini (il salto su Maps) */
   .cartellino .fuori, .mappa-cart .fuori { display: block; margin-top: 8px; color: var(--primary-color, #2196f3); text-decoration: none; }
 
+  /* IL PIN DELLA PERSONA, come la mappa di Home Assistant 2026: colonna con
+     il riquadro della faccia sopra e la punta a rombo sotto. L'ombra sta qui
+     sull'involucro (filter, come da loro), cosi' e' UNA per tutto il pin e il
+     riquadro non la proietta sulla punta. */
+  .segno-pin {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .35));
+  }
+  /* dentro il pin il riquadro e' quadrato coi bordi arrotondati DEL TEMA
+     (--ha-picture-border-radius, la stessa variabile della mappa di HA: sul
+     tema di serie e' il quadratino smussato, su un tema tondo torna tondo);
+     l'altezza lascia gli 8px della punta, e l'ombra propria se ne va. */
+  .segno-pin .segno {
+    height: calc(100% - 8px);
+    border-radius: var(--ha-picture-border-radius, 50%);
+    box-shadow: none;
+    position: relative;
+    z-index: 1;
+  }
+  /* la pillola del mucchio: le facce affiancate su fondo scheda, come la
+     cluster-bubble della mappa di HA (suo anche il raggio di 14px) */
+  .mucchio-pillola {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px;
+    background: var(--card-background-color, #fff);
+    border-radius: 14px;
+    position: relative;
+    z-index: 1;
+  }
+  .mucchio-faccia {
+    cursor: pointer;
+    box-sizing: border-box;
+    border: 2px solid #fff;
+    border-radius: var(--ha-picture-border-radius, 50%);
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font: 700 13px/1 var(--paper-font-body1_-_font-family, sans-serif);
+    flex: none;
+  }
+  /* il segnaposto "+N" quando le facce sono piu' di cinque */
+  .mucchio-resto {
+    background: var(--secondary-background-color, #e0e0e0);
+    color: var(--primary-text-color, #212121);
+  }
+
+  /* la punta: un quadrato da 12px ruotato di 45 gradi con gli angoli a 2px,
+     identico al loro; il colore glielo mette chi disegna (quello del bordo) */
+  .segno-coda {
+    width: 12px;
+    height: 12px;
+    margin-top: -6px;
+    border-radius: 2px;
+    transform: rotate(45deg);
+  }
+
   /* l'icona con la foto della persona */
   .segno {
     width: 100%;

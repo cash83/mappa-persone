@@ -636,12 +636,27 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
     // il cerchio intorno alla foto prende il COLORE SCELTO; chi non ne ha scelto
     // uno resta col filo bianco, che e' il vestito di sempre
     const bordo = riga.colore ? col : '#fff';
+    /* IL PIN CHE GALLEGGIA, come la mappa di Home Assistant 2026: il riquadro
+       con la foto sta SOPRA il punto e una punta a rombo (un quadrato da 12px
+       ruotato di 45 gradi, come il loro) scende a toccare la posizione vera.
+       Il rombo sporge di 8px sotto il riquadro (12x1.41/2, arrotondato), e
+       l'ancora del marcatore sta sulla punta: la posizione e' dove tocca il
+       rombo, non il centro della faccia. Bordo e punta hanno lo stesso colore,
+       come da loro (--ha-marker-color): quello della persona, o bianco. */
     const html =
-      '<div class="segno" style="opacity:' + op + ';background-color:' + col +
+      '<div class="segno-pin" style="opacity:' + op + '">' +
+      '<div class="segno" style="background-color:' + col +
       ';border-color:' + bordo + ';' +
       (foto ? "background-image:url('" + foto + "')" : '') + '">' +
-      (foto ? '' : nome.charAt(0).toUpperCase()) + '</div>';
-    const fai = () => L.divIcon({ className: '', html: html, iconSize: [d, d], iconAnchor: [d / 2, d / 2] });
+      (foto ? '' : nome.charAt(0).toUpperCase()) + '</div>' +
+      '<div class="segno-coda" style="background:' + bordo + '"></div></div>';
+    /* il cartellino si apre dov'era prima (all'altezza della faccia), anche se
+       l'ancora ora sta sulla punta: popupAnchor e' relativo all'ancora */
+    const fai = () => L.divIcon({
+      className: '', html: html,
+      iconSize: [d, d + 8], iconAnchor: [d / 2, d + 8],
+      popupAnchor: [0, -(d / 2 + 8)],
+    });
     const m = carta.usa(k, () => L.marker([plat, plon], { icon: fai() }));
     m.setLatLng([plat, plon]);
     // l'icona si rifa' SOLO se cambia davvero, se no l'immagine lampeggia
@@ -654,7 +669,7 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
        nome con dentro una parentesi angolare spaccava il riquadro */
     const detta = mappaSalta(nome);
     if (m.getTooltip()) m.setTooltipContent(detta);
-    else m.bindTooltip(detta, { direction: 'top', offset: [0, -d / 2] });
+    else m.bindTooltip(detta, { direction: 'top', offset: [0, -(d + 8)] });
     if (!m.getPopup()) {
       // `autoPan` spento: aprendo il cartellino la mappa NON si sposta piu'
       m.bindPopup('', { className: 'mappa-cart', closeButton: true, autoPan: false });
@@ -703,7 +718,7 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
     });
   });
 
-  disegnaMucchi(carta, insieme, vivi, config);
+  disegnaMucchi(carta, hass, insieme, vivi, config);
   carta.butta(vivi);
 }
 
@@ -733,6 +748,9 @@ function chiSiPesta(carta, hass, config) {
       lon: lon,
       d: Number(riga.dim) || MAPPA_DIM,
       nome: st.attributes.friendly_name || ent,
+      /* servono alla pillola del mucchio: la faccia e il colore di ognuno */
+      foto: riga.foto || st.attributes.entity_picture || '',
+      colore: riga.colore || '',
     });
   });
   if (gente.length < 2) return fuori;
@@ -784,8 +802,8 @@ function chiSiPesta(carta, hass, config) {
   return fuori;
 }
 
-/** i pallini col numero, uno per mucchio */
-function disegnaMucchi(carta, insieme, vivi, config) {
+/** le pillole con le facce, una per mucchio */
+function disegnaMucchi(carta, hass, insieme, vivi, config) {
   const L = carta.L;
   const vela = (config.gruppo_opacita === undefined || config.gruppo_opacita === null
     || config.gruppo_opacita === '' ? MAPPA_MUCCHIO_OPACITA : Number(config.gruppo_opacita)) / 100;
@@ -793,10 +811,37 @@ function disegnaMucchi(carta, insieme, vivi, config) {
     const k = mu.chiave;
     if (carta.mucchioAperto === k) return;   // aperto: si vedono le facce
     vivi.push(k);
-    const html = '<div class="gruppo" style="width:' + mu.d + 'px;height:' + mu.d
-      + 'px;opacity:' + vela + '">' + mu.chi.length + '</div>';
+    /* LA PILLOLA CON LE FACCE, come la mappa di Home Assistant 2026: il
+       gruppo chiuso non e' piu' un pallino col numero, si vede CHI c'e'.
+       Le facce stanno affiancate dentro una pillola del colore della scheda
+       (la stessa --card-background-color della loro cluster-bubble, raggio
+       14px come da loro), ognuna col suo bordo colorato, e sotto la solita
+       punta a rombo sulla posizione vera. Il tocco apre il ventaglio come
+       prima: la pillola dice chi c'e', il ventaglio li separa. Oltre le
+       cinque facce si mette un segnaposto "+N", che una pillola da dieci
+       coprirebbe mezza mappa. */
+    const f = Math.max(26, Math.round(mu.d * 0.75));
+    const tutti = mu.chi.slice(0, 5);
+    const resto = mu.chi.length - tutti.length;
+    const facce = tutti.map((x) => {
+      const col = mappaColore(x.colore, carta.dentro, MAPPA_PRINCIPALE);
+      const bordo = x.colore ? col : '#fff';
+      return '<div class="mucchio-faccia" data-ent="' + mappaSalta(x.ent) + '" style="width:' + f + 'px;height:' + f +
+        'px;background-color:' + col + ';border-color:' + bordo + ';' +
+        (x.foto ? "background-image:url('" + x.foto + "')" : '') + '">' +
+        (x.foto ? '' : mappaSalta(x.nome.charAt(0).toUpperCase())) + '</div>';
+    }).join('') + (resto > 0
+      ? '<div class="mucchio-faccia mucchio-resto" style="width:' + f + 'px;height:' + f + 'px">+' + resto + '</div>'
+      : '');
+    const n = tutti.length + (resto > 0 ? 1 : 0);
+    const W = n * f + (n - 1) * 3 + 6;
+    const H = f + 6;
+    const html = '<div class="segno-pin" style="opacity:' + vela + '">' +
+      '<div class="mucchio-pillola">' + facce + '</div>' +
+      '<div class="segno-coda" style="background:var(--card-background-color,#fff)"></div></div>';
     const fai = () => L.divIcon({
-      className: '', html: html, iconSize: [mu.d, mu.d], iconAnchor: [mu.d / 2, mu.d / 2],
+      className: '', html: html, iconSize: [W, H + 8], iconAnchor: [W / 2, H + 8],
+      popupAnchor: [0, -(H / 2 + 8)],
     });
     const m = carta.usa(k, () => L.marker([mu.lat, mu.lon], { icon: fai(), zIndexOffset: 500 }));
     m.setLatLng([mu.lat, mu.lon]);
@@ -806,18 +851,61 @@ function disegnaMucchi(carta, insieme, vivi, config) {
     }
     const nomi = mu.chi.map((x) => mappaSalta(x.nome)).join(', ');
     if (m.getTooltip()) m.setTooltipContent(nomi);
-    else m.bindTooltip(nomi, { direction: 'top', offset: [0, -mu.d / 2] });
+    else m.bindTooltip(nomi, { direction: 'top', offset: [0, -(H + 8)] });
+    if (!m.getPopup()) {
+      m.bindPopup('', { className: 'mappa-cart', closeButton: true, autoPan: false });
+    }
     m.off('click');
     m.on('click', (ev) => {
-      /* SI APRE A VENTAGLIO, non si ingrandisce. Ingrandire non bastava mai: due
-         persone a sedici metri restano attaccate anche allo zoom 19, e a forza
-         di stringere la mappa finiva addosso alle case. Cosi' invece le facce si
-         aprono subito e la mappa non si muove di un pixel. Si richiude toccando
-         la mappa da un'altra parte. */
+      /* NIENTE PIU' VENTAGLIO (c'era fino alla 3.3.74): nella pillola le facce
+         si vedono gia' tutte, quindi il tocco su UNA faccia apre direttamente
+         il SUO cartellino, come sulla faccia singola. Il segnaposto "+N"
+         invece ingrandisce la mappa, che e' l'unico modo di vedere chi non
+         c'entrava nella pillola. */
       if (ev && ev.originalEvent) ev.originalEvent.stopPropagation();
       m.closeTooltip();
-      carta.mucchioAperto = k;
-      if (carta.alloZoom) carta.alloZoom();
+      const toccato = ev && ev.originalEvent && ev.originalEvent.target;
+      const faccia = toccato && toccato.closest ? toccato.closest('.mucchio-faccia') : null;
+      if (!faccia) return;
+      if (faccia.classList.contains('mucchio-resto')) {
+        carta.mappa.setZoomAround([mu.lat, mu.lon], carta.mappa.getZoom() + 2);
+        return;
+      }
+      const ent = faccia.getAttribute('data-ent');
+      const chi = mu.chi.find((x) => x.ent === ent);
+      const st = hass.states[ent];
+      if (!chi || !st) return;
+      // ritoccando la stessa faccia il cartellino si chiude: la X e' piccola
+      if (m.isPopupOpen && m.isPopupOpen() && m.__cartellinoDi === ent) {
+        m.closePopup();
+        return;
+      }
+      m.__cartellinoDi = ent;
+      const col = mappaColore(chi.colore, carta.dentro, MAPPA_PRINCIPALE);
+      const p = m.getPopup();
+      const alto = carta.dentro.clientHeight;
+      p.options.maxHeight = Math.max(150, alto - 40);
+      const largo = Math.max(240, Math.min(320, carta.dentro.clientWidth - 40));
+      p.options.maxWidth = largo;
+      p.options.minWidth = largo;
+      p.options.offset = L.point(0, 0);
+      // come per la faccia singola: se il cartellino sporge di sopra, scende
+      const sistema = () => {
+        const el = p.getElement();
+        if (!el) return;
+        const y = carta.mappa.latLngToContainerPoint([mu.lat, mu.lon]).y;
+        const sporge = el.offsetHeight + 16 - y;
+        const giu = sporge > 0 ? Math.min(sporge, Math.max(0, alto - y - 20)) : 0;
+        if (giu !== p.options.offset.y) {
+          p.options.offset = L.point(0, giu);
+          p.update();
+        }
+      };
+      m.setPopupContent(cartellino(hass, ent, st, col, () => {
+        setTimeout(sistema, 30);
+      }, alto, config.sfondo || MAPPA_SFONDO));
+      m.openPopup();
+      setTimeout(sistema, 30);
     });
   });
 }

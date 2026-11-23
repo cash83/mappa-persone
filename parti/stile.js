@@ -1,4 +1,4 @@
-import { MAPPA_ICONA_CENTRA, MAPPA_ICONA_STRATI } from './costanti.js';
+import { MAPPA_ICONA_CENTRA, MAPPA_ICONA_SLEGA, MAPPA_ICONA_STRATI } from './costanti.js';
 
 /**
  * Il vestito della scheda. Va messo NELLO shadow DOM insieme a quello di
@@ -134,6 +134,242 @@ export const MAPPA_STILE = `
   .leaflet-control-layers-expanded .leaflet-control-layers-toggle { display: none; }
   .leaflet-control-layers-selector { margin-right: 6px; accent-color: var(--primary-color, #2196f3); }
 
+  /* l'interruttore dei gruppi, gemello del mirino: tre pallini; acceso si
+     colora del colore principale, cosi' si vede che i gruppi sono sciolti */
+  .mappa-slega { margin-top: 8px !important; }
+  .mappa-slega a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mappa-slega a::after {
+    content: '';
+    display: block;
+    width: 18px;
+    height: 18px;
+    background-color: currentColor;
+    -webkit-mask-image: ${MAPPA_ICONA_SLEGA};
+    mask-image: ${MAPPA_ICONA_SLEGA};
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+  .mappa-slega.acceso a { color: var(--primary-color, #2196f3); }
+
+  /* IL PANNELLO delle persone e delle zone, come la mappa di HA 2026:
+     galleggia in alto a destra del tasto +, fondo scheda, due linguette. */
+  .pannello {
+    position: absolute;
+    top: 10px;
+    left: 56px;
+    z-index: 900;
+    width: 232px;
+    max-width: calc(100% - 68px);
+    max-height: calc(100% - 20px);
+    display: flex;
+    flex-direction: column;
+    background: var(--card-background-color, #fff);
+    color: var(--primary-text-color, #212121);
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
+    font: 400 13px/1.3 var(--paper-font-body1_-_font-family, sans-serif);
+    overflow: hidden;
+  }
+  .pannello-linguette {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 8px 4px;
+  }
+  .pannello .linguetta {
+    flex: 1;
+    border: 0;
+    padding: 6px 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--secondary-text-color, #727272);
+    font: 700 12px/1 var(--paper-font-body1_-_font-family, sans-serif);
+    cursor: pointer;
+  }
+  .pannello .linguetta.scelta {
+    background: var(--secondary-background-color, #e5e5e5);
+    color: var(--primary-text-color, #212121);
+  }
+  .pannello-chiudi {
+    border: 0;
+    background: transparent;
+    color: var(--secondary-text-color, #727272);
+    font: 700 16px/1 sans-serif;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  .pannello-corpo { overflow-y: auto; padding: 4px 8px 8px; }
+  .pannello-riga {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 4px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .pannello-riga:hover { background: var(--secondary-background-color, #eee); }
+  .pannello .ritrattino {
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border-radius: var(--ha-picture-border-radius, 50%);
+    border: 2px solid #fff;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font: 700 14px/1 var(--paper-font-body1_-_font-family, sans-serif);
+    box-sizing: border-box;
+  }
+  .pannello .dicitura { min-width: 0; }
+  .pannello .dicitura b {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pannello .dicitura span {
+    color: var(--secondary-text-color, #727272);
+    font-size: 12px;
+  }
+
+  /* IL DETTAGLIO dentro il pannello, moderno: una griglia di riquadrini con
+     l'etichetta piccola sopra e il valore grande sotto, lo stato come
+     pillolina colorata accanto al nome, due bottoni azzurrati con l'icona.
+     I fondi sono un velo grigio mezzo trasparente, non il colore secondario
+     del tema: su parecchi temi scuri quello e' uguale al fondo della scheda
+     e i riquadri sparivano. Il velo si vede su qualunque fondo. */
+  .pannello-dettaglio { padding: 2px 2px 4px; }
+  .pannello-capo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 2px 12px;
+  }
+  .pannello-capo .ritrattino { width: 44px; height: 44px; font-size: 17px; }
+  .pannello-capo .dicitura b { font-size: 15px; }
+  .pannello-capo .sotto {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+  }
+  .pannello-stato {
+    background: rgba(127, 127, 127, .18);
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--primary-text-color, #212121);
+  }
+  .pannello-stato.casa {
+    background: color-mix(in srgb, var(--success-color, #4caf50) 22%, transparent);
+    color: var(--success-color, #4caf50);
+  }
+  .pannello-torna {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(127, 127, 127, .18);
+    color: var(--primary-text-color, #212121);
+    font: 700 16px/1 sans-serif;
+    cursor: pointer;
+    padding: 0;
+  }
+  .pannello-griglia {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .pannello-tile {
+    background: rgba(127, 127, 127, .14);
+    border-radius: 12px;
+    padding: 8px 10px;
+    min-width: 0;
+  }
+  .pannello-tile.largo { grid-column: 1 / -1; }
+  .pannello-tile > span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: .4px;
+    color: var(--secondary-text-color, #727272);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pannello-tile > b {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pannello-tile.piccolo > b { font-size: 12px; }
+  .pannello-tile ha-icon { --mdc-icon-size: 15px; vertical-align: -3px; }
+  .pannello-tasti {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .pannello-tasti a {
+    flex: 1;
+    text-align: center;
+    background: color-mix(in srgb, var(--primary-color, #2196f3) 16%, transparent);
+    border-radius: 12px;
+    padding: 9px 0;
+    color: var(--primary-color, #2196f3);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pannello-tasti ha-icon { --mdc-icon-size: 14px; vertical-align: -3px; }
+  /* il bottoncino per riaprire il pannello quando e' stato nascosto */
+  .pannello-apri {
+    position: absolute;
+    top: 10px;
+    left: 56px;
+    z-index: 900;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--card-background-color, #fff);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .4);
+    cursor: pointer;
+  }
+  .pannello-apri::after {
+    content: '';
+    display: block;
+    margin: auto;
+    width: 18px;
+    height: 18px;
+    background-color: var(--primary-text-color, #212121);
+    -webkit-mask-image: ${MAPPA_ICONA_SLEGA};
+    mask-image: ${MAPPA_ICONA_SLEGA};
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+
   /* il mirino sotto i tasti dell'ingrandimento: torna sulle entita' */
   .mappa-mirino { margin-top: 8px !important; }
   .mappa-mirino a {
@@ -219,6 +455,7 @@ export const MAPPA_STILE = `
      sull'involucro (filter, come da loro), cosi' e' UNA per tutto il pin e il
      riquadro non la proietta sulla punta. */
   .segno-pin {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -230,6 +467,26 @@ export const MAPPA_STILE = `
      (--ha-picture-border-radius, la stessa variabile della mappa di HA: sul
      tema di serie e' il quadratino smussato, su un tema tondo torna tondo);
      l'altezza lascia gli 8px della punta, e l'ombra propria se ne va. */
+  /* Il numeretto del gruppo chiuso: quante facce ci sono dentro il pin.
+     Attaccato all'angolo della foto, del COLORE DELLA PERSONA (inline, da
+     entita.js) col numero e il bordo bianchi: cosi' e' parte del pin, non
+     un pallino sperso. Il bianco fisso staccato non piaceva. */
+  .segno-pin .segno-conta {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    z-index: 2;   /* sopra la foto: il bordo del riquadro lo copriva */
+    min-width: 20px;
+    height: 20px;
+    padding: 0 4px;
+    border-radius: 10px;
+    color: #fff;
+    border: 2px solid #fff;
+    font: 700 11px/16px Roboto, sans-serif;
+    text-align: center;
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+  }
   .segno-pin .segno {
     height: calc(100% - 8px);
     border-radius: var(--ha-picture-border-radius, 50%);

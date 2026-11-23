@@ -676,6 +676,13 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
     }
     m.off('click');
     m.on('click', () => {
+      /* col pannello acceso le informazioni si aprono LI' DENTRO, non piu'
+         nel cartellino sulla mappa (chiesto da Gabriele il 22/11). Il
+         cartellino resta solo per chi ha spento il pannello. */
+      if (carta.apriDettaglio) {
+        carta.apriDettaglio(ent);
+        return;
+      }
       // ritoccando la stessa faccia il cartellino si chiude: la X e' piccola
       if (m.isPopupOpen && m.isPopupOpen()) {
         m.closePopup();
@@ -810,6 +817,74 @@ function disegnaMucchi(carta, hass, insieme, vivi, config) {
   insieme.mucchi.forEach((mu) => {
     const k = mu.chiave;
     if (carta.mucchioAperto === k) return;   // aperto: si vedono le facce
+    /* L'INTERRUTTORE DEI GRUPPI, terza e buona (23/11, sulle foto di
+       Gabriele): CHIUSO come fa la mappa di HA vuol dire UNA SOLA
+       faccia-pin - quella del primo del gruppo - al posto della pillola.
+       Niente pallino col numero, niente ventaglio. Il passaggio sopra dice
+       chi c'e' dentro, il tocco riapre la pillola e spegne il tasto. */
+    if (carta.sciolto) {
+      vivi.push(k);
+      const capo = mu.chi.find((x) => x.foto) || mu.chi[0];
+      const colU = mappaColore(capo.colore, carta.dentro, MAPPA_PRINCIPALE);
+      const bordoU = capo.colore ? colU : '#fff';
+      const dU = mu.d;
+      const htmlU = '<div class="segno-pin" style="opacity:' + vela + '">'
+        + '<div class="segno" style="background-color:' + colU + ';border-color:' + bordoU + ';'
+        + (capo.foto ? "background-image:url('" + capo.foto + "')" : '') + '">'
+        + (capo.foto ? '' : mappaSalta(capo.nome.charAt(0).toUpperCase())) + '</div>'
+        // il numeretto in alto a destra: quante persone ci sono nel gruppo,
+        // del colore della persona col bordo bianco, attaccato alla foto
+        + '<div class="segno-conta" style="background:' + colU + '">' + mu.chi.length + '</div>'
+        + '<div class="segno-coda" style="background:' + bordoU + '"></div></div>';
+      const faiU = () => L.divIcon({
+        className: '', html: htmlU, iconSize: [dU, dU + 8], iconAnchor: [dU / 2, dU + 8],
+      });
+      const mU = carta.usa(k, () => L.marker([mu.lat, mu.lon], { icon: faiU(), zIndexOffset: 500 }));
+      mU.setLatLng([mu.lat, mu.lon]);
+      if (mU.__segno !== htmlU) {
+        mU.setIcon(faiU());
+        mU.__segno = htmlU;
+      }
+      const nomiU = mu.chi.map((x) => mappaSalta(x.nome)).join(', ');
+      if (mU.getTooltip()) mU.setTooltipContent(nomiU);
+      else mU.bindTooltip(nomiU, { direction: 'top', offset: [0, -(dU + 8)] });
+      mU.off('click');
+      mU.on('click', (ev) => {
+        if (ev && ev.originalEvent) ev.originalEvent.stopPropagation();
+        mU.closeTooltip();
+        carta.sciogli(false);          // riapre la pillola e spegne il tasto
+        if (carta.alloZoom) carta.alloZoom();
+      });
+      /* LE POSIZIONI VERE sotto il gruppo chiuso (chiesto da Gabriele il
+         22/11): la faccia sola sta sul punto medio e copriva gli altri. Un
+         pallinetto pieno del colore di ognuno segna dove sta DAVVERO; il
+         fumetto dice chi e', il tocco apre il suo dettaglio nel pannello. */
+      mu.chi.forEach((x) => {
+        const kv = 'u:' + x.ent;
+        vivi.push(kv);
+        const colV = mappaColore(x.colore, carta.dentro, MAPPA_PRINCIPALE);
+        const pv = carta.usa(kv, () => L.circleMarker([x.lat, x.lon], {
+          pane: 'veri',   // sopra le icone: sotto, il pin della faccia li copriva
+          bubblingMouseEvents: false,
+          radius: 6,
+          color: '#fff',
+          weight: 2,
+          fillColor: colV,
+          fillOpacity: 1,
+        }));
+        pv.setLatLng([x.lat, x.lon]);
+        pv.setStyle({ fillColor: colV });
+        const dettoV = mappaSalta(x.nome);
+        if (pv.getTooltip()) pv.setTooltipContent(dettoV);
+        else pv.bindTooltip(dettoV, { direction: 'top' });
+        pv.off('click');
+        pv.on('click', (ev) => {
+          if (ev && ev.originalEvent) ev.originalEvent.stopPropagation();
+          if (carta.apriDettaglio) carta.apriDettaglio(x.ent);
+        });
+      });
+      return;
+    }
     vivi.push(k);
     /* LA PILLOLA CON LE FACCE, come la mappa di Home Assistant 2026: il
        gruppo chiuso non e' piu' un pallino col numero, si vede CHI c'e'.
@@ -875,6 +950,11 @@ function disegnaMucchi(carta, hass, insieme, vivi, config) {
       const chi = mu.chi.find((x) => x.ent === ent);
       const st = hass.states[ent];
       if (!chi || !st) return;
+      // anche dalla pillola: col pannello acceso si apre il dettaglio li'
+      if (carta.apriDettaglio) {
+        carta.apriDettaglio(ent);
+        return;
+      }
       // ritoccando la stessa faccia il cartellino si chiude: la X e' piccola
       if (m.isPopupOpen && m.isPopupOpen() && m.__cartellinoDi === ent) {
         m.closePopup();

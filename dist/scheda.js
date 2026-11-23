@@ -1,12 +1,13 @@
 import {
   MAPPA_AGGANCIO, MAPPA_ORE, MAPPA_RILEGGI, MAPPA_SFONDO, MAPPA_SUE, MAPPA_ZOOM,
-} from './costanti.js?v=3.3.76';
-import { MAPPA_STILE } from './stile.js?v=3.3.76';
-import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.3.76';
-import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.3.76';
-import { agganciaStrade } from './strade.js?v=3.3.76';
-import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.3.76';
-import { parla } from './lingue.js?v=3.3.76';
+} from './costanti.js?v=3.3.90';
+import { MAPPA_STILE } from './stile.js?v=3.3.90';
+import { Carta, caricaLeaflet, foglioLeaflet } from './carta.js?v=3.3.90';
+import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './entita.js?v=3.3.90';
+import { agganciaStrade } from './strade.js?v=3.3.90';
+import { mappaElenco, mappaRighe, mappaSua } from './utili.js?v=3.3.90';
+import { parla } from './lingue.js?v=3.3.90';
+import { disegnaPannello } from './pannello.js?v=3.3.90';
 
 /**
  * LA SCHEDA. Tiene insieme i due pezzi e parla con Home Assistant: riceve la
@@ -359,6 +360,7 @@ export class MappaPersone extends HTMLElement {
       this._carta.sfondo(this._config.sfondo);
     }
     disegnaEntita(this._carta, this._hass, this._config, this._storia, this._strade);
+    disegnaPannello(this._carta, this._hass, this._config, parla(this._hass));
     // si inquadra su DOVE SONO ADESSO, non su tutto il tragitto: ricaricando la
     // pagina si vede il vivo, e l'ingrandimento predefinito comanda per davvero.
     // La scia resta disegnata: per vederla tutta si allarga a mano.

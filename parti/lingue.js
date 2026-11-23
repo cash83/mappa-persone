@@ -40,6 +40,19 @@ const IT = {
      della persona, sui pallini e sulle scie */
   portamiMaps: 'Portami qui',
   rifaiMaps: 'Rifai il tragitto su Maps',
+  /* l'interruttore dei gruppi e il pannello, come la mappa di HA 2026 */
+  slega: 'Chiudi il gruppo in una faccia',
+  riuni: 'Apri il gruppo',
+  pannello: {
+    persone: 'Persone',
+    zone: 'Zone',
+    nessuno: 'Nessuno qui',
+    persona: (n) => (n === 1 ? '1 persona' : n + ' persone'),
+    chiudi: 'Nascondi il pannello',
+    apri: 'Apri il pannello',
+    torna: "Torna all'elenco",
+    sensori: 'Altri sensori',
+  },
 
   /* Il cartellino che si apre toccando una faccia. Prima era tutto scritto a
      mano in italiano dentro cartellino.js, e in inglese restava italiano. */
@@ -87,6 +100,7 @@ const IT = {
     colore: 'Colore',
     dim: "Grandezza dell'icona",
     opacita: 'Quanto si vede',
+    sensori: "Altre entita' nel pannello",
     nuova: 'Aggiungi una persona, un tracciatore o una zona',
     sfondo: 'Sfondo della mappa',
     ingrandimento: 'Quanto stringe quando si inquadra da sola',
@@ -122,6 +136,7 @@ const IT = {
     colore: "Il colore della scia, del bordo dell'icona e del cerchio della zona. Vuoto = il colore principale del tuo tema.",
     dim: "Quanto grande l'icona sulla mappa. Piccola per chi si muove poco, grande per chi vuoi trovare a colpo d'occhio. Sulle zone vale solo per l'icona: la foto riempie sempre tutto il cerchio.",
     opacita: "A 100 e' piena, abbassandola si vede la mappa attraverso. Utile quando due persone stanno quasi nello stesso punto e una copre l'altra.",
+    sensori: "Le entita' da mostrare nel dettaglio di questa persona, quando tocchi il suo nome nel pannello: la batteria del telefono, il Wi-Fi a cui e' attaccato, i passi... Il nome e il valore li prende da Home Assistant.",
     sfondo: 'Come si vede la mappa grande: stradale, la stessa scura per la sera, la foto dal satellite con sopra le vie e i nomi, o la topografica con le curve di livello. Puoi cambiarla al volo anche col tasto in alto a destra, senza passare di qui.',
     ingrandimento: "Quando la mappa si inquadra da sola, questo e' il massimo a cui puo' stringere. 14 inquadra il paese, 16 il quartiere, 18 il cortile. Senza un limite, due persone ferme vicine farebbero saltare la mappa addosso alle case.",
     ore: "Quanto indietro nel tempo mostrare la scia. A 0 si vede solo dove sono adesso, senza nessun percorso. Piu' ore metti, piu' la scheda impiega a disegnare la prima volta.",
@@ -176,6 +191,18 @@ const EN = {
   cartellinoScia: (verso, chi, da, a) => chi + ' — ' + verso + ', ' + da + ' to ' + a,
   portamiMaps: 'Take me here',
   rifaiMaps: 'Redo this route in Maps',
+  slega: 'Close the group into one face',
+  riuni: 'Open the group',
+  pannello: {
+    persone: 'People',
+    zone: 'Zones',
+    nessuno: 'Nobody here',
+    persona: (n) => (n === 1 ? '1 person' : n + ' people'),
+    chiudi: 'Hide the panel',
+    apri: 'Open the panel',
+    torna: 'Back to the list',
+    sensori: 'Other sensors',
+  },
 
   cart: {
     aCasa: 'Home',
@@ -221,6 +248,7 @@ const EN = {
     colore: 'Colour',
     dim: 'Icon size',
     opacita: 'How visible it is',
+    sensori: 'Extra entities in the panel',
     nuova: 'Add a person, a tracker or a zone',
     sfondo: 'Map background',
     ingrandimento: 'How far it may zoom in when framing itself',
@@ -256,6 +284,7 @@ const EN = {
     colore: 'The colour of the trail, of the icon border and of the zone circle. Empty = your theme primary colour.',
     dim: 'How big the icon is on the map. Small for someone who barely moves, big for someone you want to spot at a glance. On zones it only affects the icon: a photo always fills the whole circle.',
     opacita: 'At 100 it is solid; lower it and you see the map through it. Handy when two people are almost in the same spot and one covers the other.',
+    sensori: 'The entities to show in this person’s detail, when you tap their name in the panel: the phone battery, the Wi-Fi they are on, the steps... Name and value come from Home Assistant.',
     sfondo: 'How the big map looks: street, the same one dark for the evening, satellite imagery with roads and names on top, or topographic with contour lines. You can also switch on the fly with the button at the top right.',
     ingrandimento: 'When the map frames itself, this is as far as it may zoom in. 14 shows the town, 16 the neighbourhood, 18 the courtyard. Without a limit, two people standing close together would make the map jump right onto the houses.',
     ore: 'How far back in time to show the trail. At 0 you only see where they are now, with no route at all. The more hours you ask for, the longer the card takes to draw the first time.',

@@ -1,6 +1,6 @@
-import { mappaDistanza, mappaSalta } from './utili.js?v=3.3.76';
-import { parla } from './lingue.js?v=3.3.76';
-import { MAPPA_SFONDI, MAPPA_SFONDO } from './costanti.js?v=3.3.76';
+import { mappaDistanza, mappaSalta } from './utili.js?v=3.3.90';
+import { parla } from './lingue.js?v=3.3.90';
+import { MAPPA_SFONDI, MAPPA_SFONDO } from './costanti.js?v=3.3.90';
 
 /**
  * IL CARTELLINO che si apre toccando una persona: foto, nome, dove sta e da
@@ -32,7 +32,7 @@ function attributo(attr, pezzo) {
 }
 
 /** la via dove si trova adesso, dal sensore dell'indirizzo */
-function laVia(hass, ent) {
+export function laVia(hass, ent) {
   const nome = sensoreIndirizzo(hass, ent);
   const s = nome && hass.states[nome];
   if (!s) return '';
@@ -45,7 +45,7 @@ function laVia(hass, ent) {
 }
 
 /** il paese o la citta', dallo stesso sensore dell'indirizzo */
-function laCitta(hass, ent) {
+export function laCitta(hass, ent) {
   const nome = sensoreIndirizzo(hass, ent);
   const s = nome && hass.states[nome];
   if (!s) return '';
@@ -56,7 +56,7 @@ function laCitta(hass, ent) {
   return pezzi.length > 1 ? pezzi[1].trim() : '';
 }
 
-function daQuanto(quando, D) {
+export function daQuanto(quando, D) {
   const sec = Math.max(0, (Date.now() - new Date(quando).getTime()) / 1000);
   if (sec < 90) return D.cart.adesso;
   const min = Math.round(sec / 60);
@@ -66,7 +66,7 @@ function daQuanto(quando, D) {
   return D.cart.giorni(Math.round(ore / 24));
 }
 
-function daCasa(hass, st) {
+export function daCasa(hass, st) {
   const casa = hass.states['zone.home'];
   if (!casa || isNaN(Number(casa.attributes.latitude))) return '';
   const m = mappaDistanza(
@@ -76,7 +76,7 @@ function daCasa(hass, st) {
   return m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1) + ' km';
 }
 
-function rilevatoDa(hass, st) {
+export function rilevatoDa(hass, st) {
   const fonte = st.attributes.source;
   if (!fonte) return '';
   const s = hass.states[fonte];

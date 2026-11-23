@@ -7,6 +7,7 @@ import { disegnaEntita, firmaEntita, leggiStoria, posizioniAdesso } from './enti
 import { agganciaStrade } from './strade.js';
 import { mappaElenco, mappaRighe, mappaSua } from './utili.js';
 import { parla } from './lingue.js';
+import { disegnaPannello } from './pannello.js';
 
 /**
  * LA SCHEDA. Tiene insieme i due pezzi e parla con Home Assistant: riceve la
@@ -359,6 +360,7 @@ export class MappaPersone extends HTMLElement {
       this._carta.sfondo(this._config.sfondo);
     }
     disegnaEntita(this._carta, this._hass, this._config, this._storia, this._strade);
+    disegnaPannello(this._carta, this._hass, this._config, parla(this._hass));
     // si inquadra su DOVE SONO ADESSO, non su tutto il tragitto: ricaricando la
     // pagina si vede il vivo, e l'ingrandimento predefinito comanda per davvero.
     // La scia resta disegnata: per vederla tutta si allarga a mano.

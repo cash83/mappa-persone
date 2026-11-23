@@ -3,7 +3,7 @@
  * ogni tanto, si cambia in questo file e basta.
  */
 
-export const MAPPA_VERSIONE = '3.3.76';
+export const MAPPA_VERSIONE = '3.3.90';
 
 /* La versione del CALCOLO delle vie: entra nella chiave dei viaggi in dispensa.
    Si alza SOLO quando cambia il modo di ricavare la via (pulizia delle letture,
@@ -168,6 +168,12 @@ export const MAPPA_ICONA_CENTRA =
   + "%3Cpath d='M5 15H3v4c0 1.1.9 2 2 2h4v-2H5v-4M5 5h4V3H5c-1.1 0-2 .9-2 2v4h2V5m14-2h-4v2h4v4h2V5"
   + "c0-1.1-.9-2-2-2m0 16h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4M12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 "
   + "3-3-1.34-3-3-3Z'/%3E%3C/svg%3E\")";
+
+/** l'interruttore dei gruppi: tre pallini, il segno di "piu' persone insieme" */
+export const MAPPA_ICONA_SLEGA =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E"
+  + "%3Ccircle cx='12' cy='5.5' r='3.2'/%3E%3Ccircle cx='6' cy='16.5' r='3.2'/%3E"
+  + "%3Ccircle cx='18' cy='16.5' r='3.2'/%3E%3C/svg%3E\")";
 
 /**
  * L'icona del tasto degli sfondi. Leaflet la sua se la prende da un'immagine

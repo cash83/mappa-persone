@@ -27,6 +27,9 @@ const SCHEMA_RIGA = [
   { name: 'colore', selector: { ui_color: {} } },
   { name: 'dim', selector: { number: { min: 16, max: 96, step: 2, mode: 'slider' } } },
   { name: 'opacita', selector: { number: { min: 10, max: 100, step: 5, mode: 'slider' } } },
+  /* le entita' extra mostrate nel dettaglio del pannello: la batteria del
+     telefono, il Wi-Fi... Qualunque entita' va bene, quindi niente filtro. */
+  { name: 'sensori', selector: { entity: { multiple: true } } },
 ];
 
 /* Una zona: una foto caricata a mano, che riempie tutto il cerchio del raggio
@@ -333,7 +336,9 @@ export class MappaPersoneEditor extends HTMLElement {
       const ent = mappaRighe(this._config);
       const nuova = Object.assign({}, ent[i]);
       Object.keys(v).forEach((k) => {
-        if (v[k] === undefined || v[k] === null || v[k] === '') delete nuova[k];
+        /* l'elenco vuoto dei sensori non si salva: e' come non averlo */
+        if (v[k] === undefined || v[k] === null || v[k] === ''
+          || (Array.isArray(v[k]) && !v[k].length)) delete nuova[k];
         else nuova[k] = v[k];
       });
       if (!nuova.entity) return;
@@ -344,8 +349,10 @@ export class MappaPersoneEditor extends HTMLElement {
          perde di vista la zona che si sta modificando e non si capisce piu'
          niente. Si aspetta mezzo secondo dopo l'ultima lettera. Intanto il nome
          scritto resta quello TUO, se no `_valori` lo riscriverebbe. */
+      /* confronto per valore, non per riferimento: l'elenco dei sensori e' un
+         array nuovo a ogni evento, e con `===` sembrerebbe sempre cambiato */
       const soloNome = Object.keys(Object.assign({}, nuova, ent[i]))
-        .every((k) => k === 'nome' || nuova[k] === ent[i][k]);
+        .every((k) => k === 'nome' || JSON.stringify(nuova[k]) === JSON.stringify(ent[i][k]));
       if (soloNome) {
         /* MENTRE SCRIVI NON SI SALVA NIENTE. A ogni salvataggio Home Assistant
            ricostruisce tutta la finestra delle impostazioni: si torna in cima e
@@ -582,6 +589,7 @@ export class MappaPersoneEditor extends HTMLElement {
         colore: riga.colore || '',
         dim: riga.dim === undefined ? MAPPA_DIM : riga.dim,
         opacita: riga.opacita === undefined ? MAPPA_OPACITA : riga.opacita,
+        sensori: Array.isArray(riga.sensori) ? riga.sensori : [],
       };
       if (JSON.stringify(dati) !== JSON.stringify(f.data)) f.data = dati;
       f.hass = this._hass;

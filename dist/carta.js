@@ -1,4 +1,4 @@
-import { MAPPA_BASE, MAPPA_SFONDI, MAPPA_SFONDO, MAPPA_ZOOM } from './costanti.js?v=3.3.76';
+import { MAPPA_BASE, MAPPA_SFONDI, MAPPA_SFONDO, MAPPA_ZOOM } from './costanti.js?v=3.3.90';
 
 /**
  * LA GESTIONE DELLA MAPPA. Qui dentro sta tutto e solo quello che riguarda la
@@ -59,6 +59,10 @@ export class Carta {
     this.liv = {};            // livelli riusati per chiave
     this.mosso = false;       // l'utente l'ha spostata: da qui non si inquadra piu'
     this.mucchioAperto = null;   // quale gruppo di icone e' aperto a ventaglio
+    /* All'apertura i gruppi partono CHIUSI (una faccia sola col numero),
+       come la mappa di HA: chiesto da Gabriele il 22/11. Il tasto o un tocco
+       sul pin li aprono. */
+    this.sciolto = true;
     this._nostro = false;     // il movimento in corso e' nostro
     this._misura = { l: 0, a: 0 };
     this.ingrandimento = MAPPA_ZOOM;   // fin dove si puo' stringere
@@ -97,6 +101,9 @@ export class Carta {
     // le frecce sopra TUTTE le scie, se no la linea di chi e' disegnato dopo le copriva
     piano('frecce', 458, false);
     piano('nomiZone', 465, false);
+    /* le posizioni VERE del gruppo chiuso: SOPRA le icone (markerPane sta a
+       600), se no il pin della faccia le copriva e non si vedeva nessuno */
+    piano('veri', 620, true);
 
     /* La chiave della memoria e' una FUNZIONE, non un testo fisso: al momento in
        cui la carta nasce la scheda potrebbe non essere ancora attaccata alla
@@ -107,6 +114,7 @@ export class Carta {
 
     this._sfondi(sfondo);
     this._mirino(suCentra);
+    this._slega(alloZoom);
 
     // Appena la sposti a mano, la mappa smette di riquadrare da sola. Attenzione:
     // anche l'inquadratura NOSTRA fa scattare 'zoomstart', e senza la guardia la
@@ -233,6 +241,53 @@ export class Carta {
       },
     });
     new Mirino({ position: 'topleft' }).addTo(this.mappa);
+  }
+
+  /**
+   * L'INTERRUTTORE DEI GRUPPI, sotto il mirino. Raddrizzato il 23/11 dopo la
+   * prova di Gabriele: la pillola con le facce e' il gruppo APERTO, e questo
+   * tasto lo UNISCE nel pallino compatto col numero; un altro tocco (o un
+   * tocco sul pallino stesso) riapre le facce. Da unito il tasto si colora.
+   */
+  sciogli(unito) {
+    this.sciolto = !!unito;
+    const L = this.L;
+    if (this._slegaBox) {
+      if (this.sciolto) L.DomUtil.addClass(this._slegaBox, 'acceso');
+      else L.DomUtil.removeClass(this._slegaBox, 'acceso');
+      const a = this._slegaBox.firstChild;
+      if (a) {
+        a.title = this.sciolto
+          ? (this.D.riuni || 'Mostra le facce')
+          : (this.D.slega || 'Unisci in un pallino');
+      }
+    }
+  }
+
+  _slega(ridisegna) {
+    if (!ridisegna) return;
+    const L = this.L;
+    const io = this;
+    const Slega = L.Control.extend({
+      onAdd: () => {
+        const box = L.DomUtil.create('div', 'leaflet-bar mappa-slega');
+        io._slegaBox = box;
+        // i gruppi partono chiusi: il tasto nasce gia' acceso
+        if (io.sciolto) L.DomUtil.addClass(box, 'acceso');
+        const a = L.DomUtil.create('a', '', box);
+        a.href = '#';
+        a.title = io.D.slega || 'Unisci in un pallino';
+        a.setAttribute('role', 'button');
+        L.DomEvent.on(a, 'click', (ev) => {
+          L.DomEvent.stop(ev);
+          io.sciogli(!io.sciolto);
+          ridisegna();
+        });
+        L.DomEvent.disableClickPropagation(box);
+        return box;
+      },
+    });
+    new Slega({ position: 'topleft' }).addTo(this.mappa);
   }
 
   /** torna a inquadrare quello che le si da', anche se l'utente aveva spostato */

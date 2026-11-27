@@ -306,56 +306,49 @@ export function disegnaEntita(carta, hass, config, storia, strade) {
       const q100 = carta.mappa.layerPointToLatLng(L.point(q0.x + 100, q0.y));
       const metriPerPixel = carta.mappa.distance(c0, q100) / 100;
       if (px > 0 && px * metriPerPixel > SCOSTO_MAX) px = SCOSTO_MAX / metriPerPixel;
-      /* PROVA - OGNI PERSONA LA SUA CORSIA. Quando due persone fanno la stessa
-         strada nello stesso verso le loro scie si disegnavano una sopra l'altra
-         e se ne vedeva una sola. Ogni persona ha un posto fisso nell'elenco
-         (0, 1, 2...) e la sua linea si sposta di tanti pixel in piu' verso la
-         destra del senso di marcia: le scie restano affiancate, nell'ordine in
-         cui sono le persone nella scheda. Anche qui c'e' un tetto in metri, cosi'
-         da lontano si riavvicinano. */
-      /* Il passo fra una corsia e l'altra e' lo spessore della linea piu' grossa
-         della scheda piu' CORSIA_ARIA: con 7 fissi, mamma (spessore 6) finiva sotto
-         le linee degli altri tre. Con piu' persone la corsia di ognuno sostituisce
-         lo scostamento suo: scostamenti diversi (8, 10, 20) mescolavano l'ordine.
-         L'aria fra una corsia e l'altra era di due pixel soli, e con quattro
-         persone sulla stessa strada le scie si toccavano: il 27/09 "sono un po'
-         troppo vicine una dall'altra"; con otto pixel di aria pero' erano "troppo
-         distanti", quindi quattro: il passo fra due scie viene otto pixel, in
-         mezzo ai sei di prima e ai dodici di troppo. Il tetto in metri sale
-         insieme all'aria, se no da lontano rincollava le corsie. */
-      /* E DA OTTOBRE IL PASSO LO DECIDE `scosto`. Con piu' persone lo
-         scostamento di ognuno veniva azzerato e l'opzione nell'editor non
-         faceva niente (09/10: "ho messo mamma a 3 ma non cambia"). Adesso
-         `scosto` vuol dire la stessa cosa in tutti e due i casi: la distanza
-         in pixel fra i centri di due corsie vicine. Con piu' persone le corsie
-         devono avere tutte lo stesso passo, quindi vale il PIU' PICCOLO fra
-         quelli impostati a mano (la prima prova usava "la prima persona
-         dell'elenco": mamma era l'ultima, e non cambiava niente); se nessuno
-         lo imposta, 8, cioe' identico a prima (spessore 4 piu' quattro
-         d'aria). Mai meno dello spessore piu' uno, se no le linee si coprono. */
+      /* OGNI PERSONA LA SUA CORSIA. Quando due persone fanno la stessa
+         strada nello stesso verso le loro scie si disegnavano una sopra
+         l'altra e se ne vedeva una sola: ognuna si sposta di qualche pixel
+         verso la destra del senso di marcia, come le auto, e le scie
+         restano affiancate. */
+      /* E DAL 27/11 OGNUNO COL SUO NUMERO. Il "comando unico" di ottobre
+         (il passo uguale per tutti, col PIU' PICCOLO fra gli scosti che
+         vinceva) e' durato un mese e mezzo: mettere 18 su Mattia non faceva
+         niente perche' mamma era a 3, e "come e' fatto adesso non ha nessun
+         senso. Deve essere: se mamma e' 5 posso mettere Mattia a 6".
+         Quindi adesso `scosto` dice di CHI e': quanto lontano dalla strada
+         sta la corsia di QUELLA persona, in pixel, alla destra del proprio
+         senso di marcia (percio' andata e ritorno restano dai due lati).
+         Chi non mette niente prende il primo gradino libero della scala
+         di 8 (8, 16, 24...), dove libero vuol dire ad almeno uno
+         spessore+1 dai numeri gia' presi: cosi' le corsie automatiche non
+         finiscono mai addosso a una scelta a mano. */
       const persone = mappaRighe(config).filter((r) => !String(r.entity).startsWith('zone.'));
       const spessoreMax = Math.max(...persone.map((r) => Number(mappaSua(r, 'spessore', MAPPA_SUE)) || 4));
-      const impostati = persone.map((r) => r.scosto).filter((v) => v !== undefined && v !== null && v !== '').map(Number).filter((v) => !isNaN(v));
-      const scostoScelto = impostati.length ? Math.min(...impostati) : 8;
-      const passoCorsia = Math.max(spessoreMax + 1, scostoScelto);
-      /* IL TETTO IN METRI VALE PER LA CORSIA PIU' ESTERNA, non per ogni
-         corsia. Con 12 m a corsia la quarta persona dell'elenco finiva a 42 m
-         dalla strada appena si zoomava fuori (09/10: "il viola e' troppo
-         distante dalla strada"). Da lontano le corsie si stringono tutte
-         insieme verso la strada, tenendo l'ordine e il passo uguale; da
-         vicino comandano i pixel come prima. */
-      /* UN COMANDO SOLO (09/10: "deve essere un unico comando"): il tetto in
-         metri e' il doppio dello scosto. Con 8 di serie fa 16 m, identico a
-         prima; con 3 fa 6 m. Cosi' avvicinare le corsie le avvicina da vicino
-         (pixel) e da lontano (metri) con lo stesso numero. */
-      const CORSIE_MAX = Math.max(2, scostoScelto * 2);
-      const posto = Math.max(0, persone.map((r) => r.entity).indexOf(ent));
       let extra = 0;
       if (persone.length > 1) {
-        const esterna = persone.length - 0.5;   // in passi, la corsia piu' lontana
-        const passoMax = CORSIE_MAX / esterna / metriPerPixel;
-        const passo = Math.min(passoCorsia, passoMax);
-        extra = passo / 2 + posto * passo;
+        const aria = spessoreMax + 1;
+        const corsie = new Map();
+        const presi = [];
+        persone.forEach((r) => {
+          const v = Number(r.scosto);
+          if (r.scosto !== undefined && r.scosto !== null && r.scosto !== '' && !isNaN(v)) {
+            corsie.set(r.entity, v);
+            presi.push(v);
+          }
+        });
+        persone.forEach((r) => {
+          if (corsie.has(r.entity)) return;
+          let v = 8;
+          while (presi.some((q) => Math.abs(q - v) < aria)) v += 8;
+          corsie.set(r.entity, v);
+          presi.push(v);
+        });
+        const mio = corsie.get(ent) || 0;
+        /* il tetto in metri resta "il doppio del numero" (09/10: "il viola
+           e' troppo distante dalla strada"): da vicino comandano i pixel,
+           da lontano la corsia non si stacca mai piu' di 2*scosto metri */
+        extra = mio * Math.min(1, 2 / metriPerPixel);
         px = 0;
       }
       const distingui = !!sua('andata_ritorno');

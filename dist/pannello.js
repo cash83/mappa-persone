@@ -9,9 +9,9 @@
  * Si nasconde con la freccetta e si riapre dal bottoncino; la scelta resta
  * nel browser. Si spegne del tutto con `pannello: false` nella scheda.
  */
-import { daCasa, daQuanto, laCitta, laVia, rilevatoDa } from './cartellino.js?v=3.3.90';
-import { MAPPA_PRINCIPALE, MAPPA_ZONA_SPENTA } from './costanti.js?v=3.3.90';
-import { mappaColore, mappaRighe, mappaSalta } from './utili.js?v=3.3.90';
+import { daCasa, daQuanto, laCitta, laVia, rilevatoDa } from './cartellino.js?v=3.3.91';
+import { MAPPA_PRINCIPALE, MAPPA_ZONA_SPENTA } from './costanti.js?v=3.3.91';
+import { mappaColore, mappaRighe, mappaSalta } from './utili.js?v=3.3.91';
 
 const CHIAVE = 'mappa-persone:pannello-chiuso';
 
